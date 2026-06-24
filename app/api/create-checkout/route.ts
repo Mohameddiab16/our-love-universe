@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscription?canceled=1`,
       metadata: { userId, plan },
       subscription_data: { metadata: { userId, plan } },
-      locale: 'ar',
+      locale: 'auto',
     })
 
     return NextResponse.json({ url: session.url })
