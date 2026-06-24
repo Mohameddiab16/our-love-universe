@@ -70,6 +70,22 @@ export default function SubscriptionPage() {
   const [promoStatus, setPromoStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [promoMsg, setPromoMsg] = useState('')
   const [applying, setApplying] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+
+  const handleCheckout = async (planId: string) => {
+    setCheckoutLoading(planId)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const res = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: planId, userId: user.id, userEmail: user.email }),
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    else alert('حدث خطأ، حاول مرة أخرى')
+    setCheckoutLoading(null)
+  }
 
   useEffect(() => { loadSubscription() }, [])
 
@@ -198,9 +214,14 @@ export default function SubscriptionPage() {
                   <button className="py-3 rounded-xl text-sm font-semibold border-2 border-gray-200 text-gray-500">مجاني دائماً</button>
                 ) : (
                   <button
-                    onClick={() => alert('سيتم ربط بوابة الدفع قريباً 🚀\nاستخدم كود ترويجي في الوقت الحالي!')}
-                    className="btn-primary py-3 text-sm font-semibold">
-                    الاشتراك الآن
+                    onClick={() => handleCheckout(p.id)}
+                    disabled={checkoutLoading === p.id}
+                    className="btn-primary py-3 text-sm font-semibold flex items-center justify-center gap-2">
+                    {checkoutLoading === p.id ? (
+                      <><span className="animate-spin">⏳</span> جاري التحويل...</>
+                    ) : (
+                      <><FiCreditCard size={14} /> الاشتراك الآن</>
+                    )}
                   </button>
                 )}
               </div>
