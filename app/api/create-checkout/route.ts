@@ -3,7 +3,12 @@ import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-05-27.dahlia' })
 
-const PRICES: Record<string, { priceId: string; name: string }> = {
+const PRICES: Record<string, { priceId: string; name: string; trialDays?: number }> = {
+  solo: {
+    priceId: process.env.STRIPE_PRICE_SOLO!,
+    name: 'خطة الفردي 👤',
+    trialDays: 30,
+  },
   couple: {
     priceId: process.env.STRIPE_PRICE_COUPLE!,
     name: 'خطة الثنائي 💑',
@@ -22,15 +27,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 })
     }
 
+    const planConfig = PRICES[plan]
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       customer_email: userEmail,
-      line_items: [{ price: PRICES[plan].priceId, quantity: 1 }],
+      line_items: [{ price: planConfig.priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscription?success=1&plan=${plan}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscription?canceled=1`,
       metadata: { userId, plan },
-      subscription_data: { metadata: { userId, plan } },
+      subscription_data: {
+        metadata: { userId, plan },
+        ...(planConfig.trialDays ? { trial_period_days: planConfig.trialDays } : {}),
+      },
       locale: 'auto',
     })
 
