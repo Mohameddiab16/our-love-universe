@@ -26,10 +26,27 @@ const plans = [
     ],
   },
   {
+    id: 'solo',
+    name: 'فردي 👤',
+    price: 10,
+    priceLabel: '$10 / سنة',
+    color: 'from-blue-400 to-indigo-600',
+    features: [
+      '✅ كل مزايا المجاني',
+      '✅ تحديات يومية',
+      '✅ إحصائيات متقدمة',
+      '✅ أفكار تواريخ',
+      '✅ اختبار التوافق',
+      '❌ عالم ثنائي مشترك',
+      '❌ دعوة شريك',
+      '❌ عالم عائلي',
+    ],
+  },
+  {
     id: 'couple',
     name: 'ثنائي 💑',
-    price: 3.99,
-    priceLabel: '$3.99 / شهر',
+    price: 20,
+    priceLabel: '$20 / سنة',
     color: 'from-pink-400 to-rose-600',
     badge: 'الأكثر شيوعاً',
     features: [
@@ -46,8 +63,8 @@ const plans = [
   {
     id: 'family',
     name: 'عائلي 👨‍👩‍👧‍👦',
-    price: 5.99,
-    priceLabel: '$5.99 / شهر',
+    price: 50,
+    priceLabel: '$50 / سنة',
     color: 'from-purple-400 to-violet-600',
     features: [
       '✅ كل مزايا الثنائي',
@@ -187,7 +204,7 @@ export default function SubscriptionPage() {
           )}
 
           {/* Plans Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
             {plans.map(p => (
               <div key={p.id} className={`memory-card relative flex flex-col ${plan === p.id ? 'ring-2' : ''}`}
                 style={plan === p.id ? { '--tw-ring-color': 'var(--primary)' } as any : {}}>
