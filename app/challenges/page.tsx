@@ -63,7 +63,7 @@ export default function ChallengesPage() {
     })
 
     setCompleted((prev: Set<string>) => new Set(Array.from(prev).concat(challenge.id)))
-    setTotalPoints((prev: number) => prev + challenge.points)
+    setTotalPoints(totalPoints + challenge.points)
   }
 
   const completedCount = completed.size
