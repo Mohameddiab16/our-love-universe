@@ -1,0 +1,181 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Navbar from '@/components/Navbar'
+import AuthGuard from '@/components/AuthGuard'
+import { supabase } from '@/lib/supabase'
+import { FiClock, FiImage, FiMessageCircle, FiCalendar, FiMapPin } from 'react-icons/fi'
+
+interface TimelineItem {
+  id: string
+  type: 'memory' | 'message' | 'occasion'
+  title: string
+  description: string
+  date: string
+  location?: string | null
+  mood?: string | null
+  occasionType?: string
+}
+
+const typeConfig = {
+  memory: { icon: FiImage, color: 'from-pink-400 to-rose-500', bg: 'bg-pink-50', text: 'ذكرى', dot: 'bg-pink-400' },
+  message: { icon: FiMessageCircle, color: 'from-purple-400 to-pink-500', bg: 'bg-purple-50', text: 'رسالة', dot: 'bg-purple-400' },
+  occasion: { icon: FiCalendar, color: 'from-yellow-400 to-orange-400', bg: 'bg-yellow-50', text: 'مناسبة', dot: 'bg-yellow-400' },
+}
+
+export default function TimelinePage() {
+  const [items, setItems] = useState<TimelineItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'memory' | 'message' | 'occasion'>('all')
+
+  useEffect(() => { loadAll() }, [])
+
+  const loadAll = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const [{ data: memories }, { data: messages }, { data: occasions }] = await Promise.all([
+      supabase.from('memories').select('*').eq('user_id', user.id),
+      supabase.from('messages').select('*').eq('user_id', user.id),
+      supabase.from('occasions').select('*').eq('user_id', user.id),
+    ])
+
+    const all: TimelineItem[] = [
+      ...(memories || []).map(m => ({
+        id: m.id, type: 'memory' as const,
+        title: m.title, description: m.description, date: m.date, location: m.location,
+      })),
+      ...(messages || []).map(m => ({
+        id: m.id, type: 'message' as const,
+        title: m.title, description: m.content, date: m.created_at.split('T')[0], mood: m.mood,
+      })),
+      ...(occasions || []).map(o => ({
+        id: o.id, type: 'occasion' as const,
+        title: o.title, description: o.description || '', date: o.date, occasionType: o.type,
+      })),
+    ]
+
+    all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    setItems(all)
+    setLoading(false)
+  }
+
+  const filtered = filter === 'all' ? items : items.filter(i => i.type === filter)
+
+  // Group by year-month
+  const grouped = filtered.reduce((acc, item) => {
+    const d = new Date(item.date)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' })
+    if (!acc[key]) acc[key] = { label, items: [] }
+    acc[key].items.push(item)
+    return acc
+  }, {} as Record<string, { label: string; items: TimelineItem[] }>)
+
+  return (
+    <AuthGuard>
+      <div className="flex min-h-screen">
+        <Navbar />
+        <main className="flex-1 md:mr-64 p-4 md:p-8 pt-16 md:pt-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold gradient-text flex items-center gap-2 mb-1">
+              <FiClock /> الخط الزمني
+            </h1>
+            <p className="text-gray-500 text-sm">رحلتنا عبر الزمن 🌙</p>
+          </div>
+
+          {/* Filter */}
+          <div className="flex gap-2 flex-wrap mb-8">
+            {(['all', 'memory', 'message', 'occasion'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border-2 ${
+                  filter === f
+                    ? 'bg-gradient-to-r from-pink-400 to-pink-600 text-white border-transparent shadow-md'
+                    : 'border-pink-100 text-gray-500 hover:border-pink-300'
+                }`}
+              >
+                {f === 'all' ? 'الكل' : f === 'memory' ? '📸 ذكريات' : f === 'message' ? '💌 رسائل' : '🎉 مناسبات'}
+              </button>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="space-y-6">
+              {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">⏰</div>
+              <p className="text-xl font-semibold text-gray-700">لا توجد عناصر</p>
+              <p className="text-gray-400 mt-2">ابدأ بإضافة ذكريات ورسائل ومناسبات</p>
+            </div>
+          ) : (
+            <div className="relative">
+              {/* Vertical line */}
+              <div className="absolute right-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-pink-300 via-purple-300 to-transparent" />
+
+              <div className="space-y-8 pr-14">
+                {Object.entries(grouped).map(([key, { label, items: groupItems }]) => (
+                  <div key={key}>
+                    {/* Month label */}
+                    <div className="relative flex items-center mb-4">
+                      <div className="absolute -right-14 w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-lg">
+                        <FiClock className="text-white text-sm" />
+                      </div>
+                      <h2 className="text-base font-bold text-gray-700 bg-white px-3 py-1 rounded-full border border-pink-100 shadow-sm">
+                        {label}
+                      </h2>
+                    </div>
+
+                    {/* Items */}
+                    <div className="space-y-3">
+                      {groupItems.map(item => {
+                        const config = typeConfig[item.type]
+                        const Icon = config.icon
+                        return (
+                          <div key={item.id} className="relative">
+                            {/* Dot */}
+                            <div className={`absolute -right-10 top-4 w-3 h-3 rounded-full ${config.dot} ring-2 ring-white shadow`} />
+
+                            <div className="memory-card">
+                              <div className="flex items-start gap-3">
+                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center flex-shrink-0`}>
+                                  <Icon className="text-white text-base" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${config.bg} font-medium`} style={{ color: '#666' }}>
+                                      {config.text}
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(item.date).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                  <h3 className="font-semibold text-gray-800 mb-1">{item.title}</h3>
+                                  {item.description && (
+                                    <p className="text-gray-500 text-sm line-clamp-2">{item.description}</p>
+                                  )}
+                                  {item.location && (
+                                    <span className="inline-flex items-center gap-1 text-xs text-pink-400 mt-1">
+                                      <FiMapPin size={10} /> {item.location}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </AuthGuard>
+  )
+}
