@@ -9,6 +9,11 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+function getExpiresAt(sub: any): string {
+  const end = sub.current_period_end ?? sub.billing_cycle_anchor
+  return new Date(end * 1000).toISOString()
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')!
@@ -25,8 +30,8 @@ export async function POST(req: NextRequest) {
     const { userId, plan } = session.metadata || {}
     if (!userId || !plan) return NextResponse.json({ ok: true })
 
-    const sub = await stripe.subscriptions.retrieve(session.subscription as string)
-    const expiresAt = new Date(sub.current_period_end * 1000).toISOString()
+    const sub = await stripe.subscriptions.retrieve(session.subscription as string) as any
+    const expiresAt = getExpiresAt(sub)
 
     await supabaseAdmin.from('user_subscriptions').upsert({
       user_id: userId,
@@ -39,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object as Stripe.Subscription
-    const userId = sub.metadata?.userId
+    const userId = (sub as any).metadata?.userId
     if (userId) {
       await supabaseAdmin.from('user_subscriptions').update({ plan: 'free', expires_at: null })
         .eq('user_id', userId)
@@ -47,14 +52,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'invoice.payment_succeeded') {
-    const invoice = event.data.object as Stripe.Invoice
-    const subId = (invoice as any).subscription as string
+    const invoice = event.data.object as any
+    const subId = invoice.subscription as string
     if (!subId) return NextResponse.json({ ok: true })
-    const sub = await stripe.subscriptions.retrieve(subId)
+    const sub = await stripe.subscriptions.retrieve(subId) as any
     const userId = sub.metadata?.userId
     const plan = sub.metadata?.plan
     if (userId && plan) {
-      const expiresAt = new Date(sub.current_period_end * 1000).toISOString()
+      const expiresAt = getExpiresAt(sub)
       await supabaseAdmin.from('user_subscriptions').update({ expires_at: expiresAt })
         .eq('user_id', userId)
     }
