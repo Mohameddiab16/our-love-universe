@@ -7,6 +7,7 @@ import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
 import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye } from 'react-icons/fi'
 import { useApp } from '@/contexts/AppContext'
+import { useSiteTexts } from '@/lib/useSiteTexts'
 
 
 interface Memory {
@@ -23,6 +24,7 @@ const emptyForm = { title: '', description: '', location: '', date: new Date().t
 
 export default function MemoriesPage() {
   const { activeWorldId, activeWorldOwnerId } = useApp()
+  const t = useSiteTexts()
   const [memories, setMemories] = useState<Memory[]>([])
   const [filtered, setFiltered] = useState<Memory[]>([])
   const [loading, setLoading] = useState(true)
@@ -169,7 +171,7 @@ export default function MemoriesPage() {
               <h1 className="text-2xl font-bold gradient-text flex items-center gap-2">
                 <FiImage /> ذكرياتنا
               </h1>
-              <p className="text-gray-500 text-sm mt-1">كل لحظة جميلة نعيشها معاً 💕</p>
+              <p className="text-gray-500 text-sm mt-1">{t('memories_subtitle', 'كل لحظة جميلة نعيشها معاً 💕')}</p>
             </div>
             <button onClick={openAdd} className="btn-primary flex items-center gap-2 self-start sm:self-auto">
               <FiPlus /> ذكرى جديدة

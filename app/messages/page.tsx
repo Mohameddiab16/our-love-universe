@@ -6,6 +6,7 @@ import AuthGuard from '@/components/AuthGuard'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
 import { useApp } from '@/contexts/AppContext'
+import { useSiteTexts } from '@/lib/useSiteTexts'
 import { FiMessageCircle, FiPlus, FiSearch, FiTrash2, FiEdit2, FiHeart, FiSmile, FiEye } from 'react-icons/fi'
 
 interface Message {
@@ -30,6 +31,7 @@ const emptyForm = { title: '', content: '', mood: 'love' }
 
 export default function MessagesPage() {
   const { activeWorldId } = useApp()
+  const t = useSiteTexts()
   const [messages, setMessages] = useState<Message[]>([])
   const [filtered, setFiltered] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
@@ -126,7 +128,7 @@ export default function MessagesPage() {
               <h1 className="text-2xl font-bold gradient-text flex items-center gap-2">
                 <FiMessageCircle /> رسائل الحب
               </h1>
-              <p className="text-gray-500 text-sm mt-1">كلماتنا التي تملأ القلب 💌</p>
+              <p className="text-gray-500 text-sm mt-1">{t('messages_subtitle', 'كلماتنا التي تملأ القلب 💌')}</p>
             </div>
             <button onClick={() => { setEditTarget(null); setForm(emptyForm); setModalOpen(true) }}
               className="btn-primary flex items-center gap-2 self-start sm:self-auto">

@@ -6,6 +6,7 @@ import AuthGuard from '@/components/AuthGuard'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
 import { useApp } from '@/contexts/AppContext'
+import { useSiteTexts } from '@/lib/useSiteTexts'
 import { FiCalendar, FiPlus, FiTrash2, FiEdit2, FiHeart, FiStar, FiGift, FiClock } from 'react-icons/fi'
 
 interface Occasion {
@@ -38,6 +39,7 @@ function getDaysUntil(dateStr: string) {
 
 export default function OccasionsPage() {
   const { activeWorldId } = useApp()
+  const t = useSiteTexts()
   const [occasions, setOccasions] = useState<Occasion[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -105,7 +107,7 @@ export default function OccasionsPage() {
               <h1 className="text-2xl font-bold gradient-text flex items-center gap-2">
                 <FiCalendar /> المناسبات
               </h1>
-              <p className="text-gray-500 text-sm mt-1">لحظاتنا المميزة على مدار العام 🎉</p>
+              <p className="text-gray-500 text-sm mt-1">{t('occasions_subtitle', 'لحظاتنا المميزة على مدار العام 🎉')}</p>
             </div>
             <button
               onClick={() => { setEditTarget(null); setForm(emptyForm); setModalOpen(true) }}

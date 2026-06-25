@@ -8,6 +8,7 @@ import PinnedCounter from '@/components/PinnedCounter'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
 import { useApp } from '@/contexts/AppContext'
+import { useSiteTexts } from '@/lib/useSiteTexts'
 import { FiImage, FiMessageCircle, FiCalendar, FiHeart, FiMapPin, FiZap, FiGift, FiStar, FiGlobe, FiPlus, FiCheck } from 'react-icons/fi'
 
 interface PinnedConfig {
@@ -21,6 +22,7 @@ interface Occasion { id: string; title: string; date: string; type: string }
 
 export default function Dashboard() {
   const { activeWorldId } = useApp()
+  const t = useSiteTexts()
   const [stats, setStats] = useState({ memories: 0, messages: 0, occasions: 0 })
   const [userName, setUserName] = useState('')
   const [userId, setUserId] = useState('')
@@ -111,7 +113,7 @@ export default function Dashboard() {
           <div className="glass-card rounded-3xl p-6 mb-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 text-9xl opacity-5 select-none leading-none">💕</div>
             <div className="relative">
-              <p className="text-sm mb-1" style={{ color: 'var(--primary)' }}>أهلاً بك ✨</p>
+              <p className="text-sm mb-1" style={{ color: 'var(--primary)' }}>{t('home_welcome', 'أهلاً بك ✨')}</p>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-1">
                 مرحباً، <span className="gradient-text">{userName}</span>
               </h1>
@@ -253,7 +255,7 @@ export default function Dashboard() {
                 </Link>
               ))}
               <div className="p-4 rounded-2xl text-center" style={{ background: 'linear-gradient(135deg, var(--light), #ede9fe)' }}>
-                <p className="text-sm text-gray-600 italic">"في عالمنا الصغير، تجد قلبي وطناً دائماً" 💕</p>
+                <p className="text-sm text-gray-600 italic">{t('home_subtitle', '"في عالمنا الصغير، تجد قلبي وطناً دائماً" 💕')}</p>
               </div>
             </div>
           </div>
