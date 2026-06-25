@@ -6,11 +6,10 @@ import { useState, useEffect } from 'react'
 import {
   FiHome, FiImage, FiMessageCircle, FiCalendar, FiClock, FiBarChart2,
   FiSettings, FiLogOut, FiMenu, FiX, FiHeart, FiGlobe, FiUser,
-  FiStar, FiZap, FiGift, FiCreditCard, FiShield, FiBell
+  FiZap, FiGift, FiShield, FiBell
 } from 'react-icons/fi'
 import { signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { useApp } from '@/contexts/AppContext'
 
 const navGroups = [
   {
@@ -41,9 +40,8 @@ const navGroups = [
   {
     label: 'الحساب',
     items: [
-      { href: '/profile',      label: 'ملفي الشخصي',  icon: FiUser },
-      { href: '/subscription', label: 'الاشتراك',     icon: FiCreditCard },
-      { href: '/settings',     label: 'الإعدادات',    icon: FiSettings },
+      { href: '/profile',  label: 'ملفي الشخصي', icon: FiUser },
+      { href: '/settings', label: 'الإعدادات',   icon: FiSettings },
     ]
   },
 ]
@@ -51,7 +49,6 @@ const navGroups = [
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { plan } = useApp()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [unreadNotif, setUnreadNotif] = useState(0)
@@ -78,13 +75,6 @@ export default function Navbar() {
     router.push('/auth')
   }
 
-  const planBadge = ({
-    free:   { label: 'مجاني',  cls: 'plan-free' },
-    solo:   { label: 'فردي',   cls: 'plan-couple' },
-    couple: { label: 'ثنائي',  cls: 'plan-couple' },
-    family: { label: 'عائلي',  cls: 'plan-family' },
-  } as Record<string, { label: string; cls: string }>)[plan] || { label: 'فردي', cls: 'plan-couple' }
-
   const SidebarContent = () => (
     <>
       {/* Logo */}
@@ -95,7 +85,7 @@ export default function Navbar() {
         </div>
         <div>
           <p className="font-bold text-sm gradient-text">Our Love Universe</p>
-          <span className={`badge text-xs ${planBadge.cls}`}>{planBadge.label}</span>
+          <p className="text-xs text-gray-400">عالمنا الخاص 💕</p>
         </div>
       </div>
 

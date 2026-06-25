@@ -15,8 +15,6 @@ interface AppContextType {
   setActiveWorldId: (id: string | null) => void
   activeWorldOwnerId: string | null
   setActiveWorldOwner: (worldId: string | null, ownerId: string | null) => void
-  plan: 'free' | 'couple' | 'family' | 'solo'
-  setPlan: (p: 'free' | 'couple' | 'family' | 'solo') => void
   totalPoints: number
   setTotalPoints: (n: number) => void
 }
@@ -29,7 +27,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>('ar')
   const [activeWorldId, setActiveWorldId] = useState<string | null>(null)
   const [activeWorldOwnerId, setActiveWorldOwnerId] = useState<string | null>(null)
-  const [plan, setPlan] = useState<'free' | 'couple' | 'family' | 'solo'>('free')
   const [totalPoints, setTotalPoints] = useState(0)
 
   useEffect(() => {
@@ -88,7 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lang, setLang,
       activeWorldId, setActiveWorldId: handleSetWorld,
       activeWorldOwnerId, setActiveWorldOwner,
-      plan, setPlan, totalPoints, setTotalPoints,
+      totalPoints, setTotalPoints,
     }}>
       {children}
     </AppContext.Provider>

@@ -20,36 +20,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         setLoading(false)
         return
       }
-
-      const userId = session.user.id
-
-      // Admin bypass — skip subscription check
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', userId)
-        .single()
-
-      if (!profile?.is_admin) {
-        // Check active paid subscription
-        const { data: sub } = await supabase
-          .from('user_subscriptions')
-          .select('plan, expires_at')
-          .eq('user_id', userId)
-          .single()
-
-        const hasPlan = sub && sub.plan && sub.plan !== 'free'
-        const notExpired = !sub?.expires_at || new Date(sub.expires_at) > new Date()
-
-        if (!hasPlan || !notExpired) {
-          router.replace('/subscribe')
-          setLoading(false)
-          return
-        }
-      }
-
       setAuthed(true)
-      setCurrentUserId(userId)
+      setCurrentUserId(session.user.id)
       setLoading(false)
     })
 
