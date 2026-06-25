@@ -72,7 +72,8 @@ export default function WorldsPage() {
     const filtered = (joined || []).filter(
       (j: any) => j.worlds && j.worlds.owner_id !== user.id
     )
-    setJoinedWorlds(filtered as unknown as JoinedWorld[])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setJoinedWorlds(filtered as any)
 
     // Load members for my worlds
     for (const w of owned || []) {
