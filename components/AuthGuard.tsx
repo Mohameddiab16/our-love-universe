@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import MusicPlayer from './MusicPlayer'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -58,7 +57,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     } : {}}>
       {bgUrl && <div className="fixed inset-0 bg-white/70 dark:bg-black/60 pointer-events-none z-0" />}
       <div className="relative z-10">{children}</div>
-      <MusicPlayer />
     </div>
   )
 }
