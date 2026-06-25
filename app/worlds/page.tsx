@@ -68,8 +68,11 @@ export default function WorldsPage() {
       .from('world_members')
       .select('world_id, role, worlds(*)')
       .eq('user_id', user.id)
-      .neq('worlds.owner_id', user.id)
-    setJoinedWorlds((joined || []).filter((j: any) => j.worlds) as JoinedWorld[])
+    // Filter out worlds I own
+    const filtered = (joined || []).filter(
+      (j: any) => j.worlds && j.worlds.owner_id !== user.id
+    )
+    setJoinedWorlds(filtered as JoinedWorld[])
 
     // Load members for my worlds
     for (const w of owned || []) {

@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useApp } from '@/contexts/AppContext'
 import { FiHeart, FiGlobe, FiCheckCircle, FiX } from 'react-icons/fi'
 
 export default function InvitePage() {
   const { token } = useParams()
   const router = useRouter()
+  const { setActiveWorldOwner } = useApp()
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState('')
@@ -76,6 +78,11 @@ export default function InvitePage() {
       setError(json.error || 'حدث خطأ في الانضمام')
       setJoining(false)
       return
+    }
+
+    // Automatically activate the world so they see the owner's content immediately
+    if (json.worldId && json.ownerId) {
+      setActiveWorldOwner(json.worldId, json.ownerId)
     }
 
     setSuccess(true)
