@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye } from 'react-icons/fi'
 import { useApp } from '@/contexts/AppContext'
 
+
 interface Memory {
   id: string
   title: string
@@ -21,7 +22,7 @@ interface Memory {
 const emptyForm = { title: '', description: '', location: '', date: new Date().toISOString().split('T')[0] }
 
 export default function MemoriesPage() {
-  const { activeWorldOwnerId } = useApp()
+  const { activeWorldId, activeWorldOwnerId } = useApp()
   const [memories, setMemories] = useState<Memory[]>([])
   const [filtered, setFiltered] = useState<Memory[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +38,7 @@ export default function MemoriesPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const imageRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { loadMemories() }, [activeWorldOwnerId])
+  useEffect(() => { loadMemories() }, [activeWorldId])
 
   useEffect(() => {
     const q = search.toLowerCase()
@@ -52,12 +53,15 @@ export default function MemoriesPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setUserId(user.id)
-    const targetId = activeWorldOwnerId || user.id
-    const { data, error } = await supabase
-      .from('memories')
-      .select('*')
-      .eq('user_id', targetId)
-      .order('date', { ascending: false })
+    let query = supabase.from('memories').select('*').order('date', { ascending: false })
+
+    if (activeWorldId) {
+      query = query.eq('world_id', activeWorldId)
+    } else {
+      query = query.eq('user_id', user.id).is('world_id', null)
+    }
+
+    const { data, error } = await query
     if (!error) {
       setMemories(data || [])
       setFiltered(data || [])
@@ -132,6 +136,7 @@ export default function MemoriesPage() {
         location: form.location || null,
         date: form.date,
         image_url: imageUrl,
+        world_id: activeWorldId || null,
       })
       if (error) { setSaveError('حدث خطأ في الحفظ: ' + error.message); setSaving(false); return }
     }
