@@ -87,7 +87,7 @@ export default function InvitePage() {
 
     setSuccess(true)
     setJoining(false)
-    setTimeout(() => router.push('/'), 2500)
+    setTimeout(() => router.push('/worlds'), 2500)
   }
 
   if (loading) {
