@@ -1,10 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
-
 interface Memory {
   id: string
   title: string
@@ -16,20 +11,8 @@ interface Memory {
   longitude: number | null
 }
 
-const pinIcon = (emoji = '📍') => L.divIcon({
-  html: `<div style="font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">${emoji}</div>`,
-  className: '',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-})
-
 export default function MemoryMapView({ memories }: { memories: Memory[] }) {
   const withCoords = memories.filter(m => m.latitude && m.longitude)
-
-  const center: [number, number] = withCoords.length > 0
-    ? [withCoords[0].latitude!, withCoords[0].longitude!]
-    : [30.0444, 31.2357] // Cairo default
 
   if (withCoords.length === 0) {
     return (
@@ -41,31 +24,50 @@ export default function MemoryMapView({ memories }: { memories: Memory[] }) {
     )
   }
 
+  const openInMaps = (lat: number, lng: number, title: string) => {
+    window.open(`https://www.google.com/maps?q=${lat},${lng}&z=15`, '_blank')
+  }
+
   return (
-    <div className="rounded-2xl overflow-hidden shadow-lg" style={{ height: '500px' }}>
-      <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+    <div className="space-y-3">
+      {/* Mini map via iframe for first location */}
+      {withCoords.length > 0 && (
+        <div className="rounded-2xl overflow-hidden shadow-md mb-4" style={{ height: 280 }}>
+          <iframe
+            title="خريطة الذكريات"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            loading="lazy"
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${withCoords[0].longitude! - 0.05},${withCoords[0].latitude! - 0.05},${withCoords[0].longitude! + 0.05},${withCoords[0].latitude! + 0.05}&layer=mapnik&marker=${withCoords[0].latitude},${withCoords[0].longitude}`}
+          />
+        </div>
+      )}
+
+      {/* List of memories with coords */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {withCoords.map(m => (
-          <Marker key={m.id} position={[m.latitude!, m.longitude!]} icon={pinIcon('💕')}>
-            <Popup>
-              <div className="text-right min-w-[160px]">
-                {m.image_url && (
-                  <img src={m.image_url} alt={m.title}
-                    className="w-full h-24 object-cover rounded-lg mb-2" />
-                )}
-                <p className="font-bold text-gray-800 text-sm">{m.title}</p>
-                {m.location && <p className="text-xs text-pink-500 mt-0.5">📍 {m.location}</p>}
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(m.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
+          <div key={m.id} className="memory-card flex items-center gap-3">
+            {m.image_url && (
+              <img src={m.image_url} alt={m.title}
+                className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-800 text-sm truncate">{m.title}</p>
+              {m.location && <p className="text-xs text-pink-500 truncate">📍 {m.location}</p>}
+              <p className="text-xs text-gray-400">
+                {new Date(m.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <button
+              onClick={() => openInMaps(m.latitude!, m.longitude!, m.title)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium text-white"
+              style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))' }}>
+              🗺️ فتح
+            </button>
+          </div>
         ))}
-      </MapContainer>
+      </div>
     </div>
   )
 }

@@ -8,9 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye, FiGrid, FiMap } from 'react-icons/fi'
 import { useApp } from '@/contexts/AppContext'
 import { useSiteTexts } from '@/lib/useSiteTexts'
-import dynamic from 'next/dynamic'
-
-const MemoryMapView = dynamic(() => import('@/components/MemoryMapView'), { ssr: false })
+import MemoryMapView from '@/components/MemoryMapView'
 
 interface Memory {
   id: string
