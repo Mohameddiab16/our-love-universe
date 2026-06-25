@@ -12,16 +12,20 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [bgUrl, setBgUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         router.replace('/auth')
-      } else {
-        setAuthed(true)
-        // Load background
-        supabase.from('profiles').select('background_url').eq('id', session.user.id).single().then(({ data }) => {
-          if (data?.background_url) setBgUrl(data.background_url)
-        })
+        setLoading(false)
+        return
       }
+      setAuthed(true)
+      // Load background
+      const { data } = await supabase
+        .from('profiles')
+        .select('background_url')
+        .eq('id', session.user.id)
+        .single()
+      if (data?.background_url) setBgUrl(data.background_url)
       setLoading(false)
     })
 
@@ -46,21 +50,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!authed) return null
 
   return (
-    <div
-      className="min-h-screen"
-      style={bgUrl ? {
-        backgroundImage: `url(${bgUrl})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      } : {}}
-    >
-      {bgUrl && (
-        <div className="fixed inset-0 bg-white/70 dark:bg-black/60 pointer-events-none z-0" />
-      )}
-      <div className="relative z-10">
-        {children}
-      </div>
+    <div className="min-h-screen" style={bgUrl ? {
+      backgroundImage: `url(${bgUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+    } : {}}>
+      {bgUrl && <div className="fixed inset-0 bg-white/70 dark:bg-black/60 pointer-events-none z-0" />}
+      <div className="relative z-10">{children}</div>
       <MusicPlayer />
     </div>
   )
