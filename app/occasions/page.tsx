@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
+import { useApp } from '@/contexts/AppContext'
 import { FiCalendar, FiPlus, FiTrash2, FiEdit2, FiHeart, FiStar, FiGift, FiClock } from 'react-icons/fi'
 
 interface Occasion {
@@ -36,6 +37,7 @@ function getDaysUntil(dateStr: string) {
 }
 
 export default function OccasionsPage() {
+  const { activeWorldId } = useApp()
   const [occasions, setOccasions] = useState<Occasion[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -43,16 +45,20 @@ export default function OccasionsPage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { loadOccasions() }, [])
+  useEffect(() => { loadOccasions() }, [activeWorldId])
 
   const loadOccasions = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase
-      .from('occasions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date')
+
+    let query = supabase.from('occasions').select('*').order('date')
+    if (activeWorldId) {
+      query = query.eq('world_id', activeWorldId)
+    } else {
+      query = query.eq('user_id', user.id).is('world_id', null)
+    }
+
+    const { data } = await query
     setOccasions(data || [])
     setLoading(false)
   }
@@ -69,7 +75,8 @@ export default function OccasionsPage() {
       }).eq('id', editTarget.id)
     } else {
       await supabase.from('occasions').insert({
-        user_id: user.id, title: form.title, description: form.description || null, date: form.date, type: form.type,
+        user_id: user.id, title: form.title, description: form.description || null,
+        date: form.date, type: form.type, world_id: activeWorldId || null,
       })
     }
     setModalOpen(false)
