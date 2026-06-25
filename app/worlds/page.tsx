@@ -114,7 +114,7 @@ export default function WorldsPage() {
     }).select().single()
 
     if (inv) {
-      const baseUrl = window.location.origin
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       const link = `${baseUrl}/invite/${inv.token}`
       const worldName = myWorlds.find(w => w.id === inviteModal)?.name || 'عالمنا'
       const whatsappMsg = encodeURIComponent(`💕 دعوة للانضمام إلى "${worldName}" في Our Love Universe\n\nاضغط الرابط:\n${link}`)
