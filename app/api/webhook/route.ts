@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
     const sub = event.data.object as Stripe.Subscription
     const userId = (sub as any).metadata?.userId
     if (userId) {
-      await supabaseAdmin.from('user_subscriptions').update({ plan: 'free', expires_at: null })
+      await supabaseAdmin.from('user_subscriptions')
+        .update({ plan: 'free', expires_at: new Date().toISOString() })
         .eq('user_id', userId)
     }
   }
