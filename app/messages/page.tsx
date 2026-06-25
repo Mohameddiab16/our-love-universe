@@ -16,7 +16,6 @@ interface Message {
   created_at: string
   user_id: string
   world_id: string | null
-  profiles?: { full_name: string | null; avatar_url: string | null }
 }
 
 const moods = [
@@ -58,7 +57,7 @@ export default function MessagesPage() {
 
     let query = supabase
       .from('messages')
-      .select('*, profiles(full_name, avatar_url)')
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (activeWorldId) {
@@ -67,7 +66,8 @@ export default function MessagesPage() {
       query = query.eq('user_id', user.id).is('world_id', null)
     }
 
-    const { data } = await query
+    const { data, error } = await query
+    console.log('messages data:', data, 'error:', error)
     setMessages(data || [])
     setFiltered(data || [])
     setLoading(false)
@@ -164,17 +164,13 @@ export default function MessagesPage() {
                 <div key={msg.id} className="memory-card group">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Avatar */}
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 mt-0.5 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
-                        {msg.profiles?.avatar_url
-                          ? <img src={msg.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                          : <FiHeart className="text-pink-400" size={14} />}
+                        <FiHeart className="text-pink-400" size={14} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        {/* Sender name in shared world */}
                         {activeWorldId && (
                           <p className="text-xs text-gray-400 mb-0.5">
-                            {msg.user_id === currentUserId ? 'أنت' : (msg.profiles?.full_name || 'الشريك')}
+                            {msg.user_id === currentUserId ? 'أنت 💙' : 'شريكك 💕'}
                           </p>
                         )}
                         <div className="flex items-center gap-2 flex-wrap mb-1">
