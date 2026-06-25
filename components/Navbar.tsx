@@ -78,11 +78,12 @@ export default function Navbar() {
     router.push('/auth')
   }
 
-  const planBadge = {
+  const planBadge = ({
     free:   { label: 'مجاني',  cls: 'plan-free' },
+    solo:   { label: 'فردي',   cls: 'plan-couple' },
     couple: { label: 'ثنائي',  cls: 'plan-couple' },
     family: { label: 'عائلي',  cls: 'plan-family' },
-  }[plan]
+  } as Record<string, { label: string; cls: string }>)[plan] || { label: 'مجاني', cls: 'plan-free' }
 
   const SidebarContent = () => (
     <>
