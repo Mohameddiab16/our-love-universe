@@ -57,11 +57,16 @@ export default function AuthPage() {
         password: form.password,
         options: {
           data: { full_name: form.name, phone: form.phone },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
       if (error) {
-        setError(error.message.includes('already') ? 'هذا البريد مسجل مسبقاً' : 'حدث خطأ، تحقق من البيانات')
+        if (error.message.includes('already') || error.message.includes('registered')) {
+          setError('هذا البريد مسجل مسبقاً')
+        } else if (error.message.includes('password')) {
+          setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+        } else {
+          setError('حدث خطأ: ' + error.message)
+        }
       } else if (data.user) {
         // Upload avatar if provided
         if (avatar) {

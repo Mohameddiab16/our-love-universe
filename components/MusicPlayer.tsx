@@ -15,23 +15,29 @@ export default function MusicPlayer() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase.from('profiles').select('music_url, music_name').eq('id', user.id).single().then(({ data }) => {
-        if (data?.music_url) {
-          setMusicUrl(data.music_url)
-          setMusicName(data.music_name || 'أغنيتنا 💕')
-        }
-        setLoading(false)
-      })
-    })
+    loadMusic()
   }, [])
+
+  const loadMusic = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setLoading(false); return }
+    const { data } = await supabase
+      .from('profiles')
+      .select('music_url, music_name')
+      .eq('id', user.id)
+      .single()
+    if (data?.music_url) {
+      setMusicUrl(data.music_url)
+      setMusicName(data.music_name || 'أغنيتنا 💕')
+    }
+    setLoading(false)
+  }
 
   useEffect(() => {
     if (!audioRef.current || !musicUrl) return
+    audioRef.current.src = musicUrl
     audioRef.current.volume = volume
     audioRef.current.loop = true
-    // Auto-play on load (with user interaction fallback)
     const tryPlay = async () => {
       try {
         await audioRef.current!.play()
@@ -63,11 +69,9 @@ export default function MusicPlayer() {
 
   return (
     <>
-      <audio ref={audioRef} src={musicUrl} loop preload="auto" />
+      <audio ref={audioRef} loop preload="auto" />
 
-      {/* Floating Button */}
       <div className="fixed bottom-6 left-6 z-50 flex flex-col items-end gap-2">
-        {/* Expanded Player */}
         {visible && (
           <div className="glass-card rounded-2xl p-4 w-56 shadow-xl animate-fadeIn">
             <p className="text-xs text-gray-500 mb-1">🎵 يعزف الآن</p>
@@ -88,7 +92,6 @@ export default function MusicPlayer() {
           </div>
         )}
 
-        {/* Toggle Button */}
         <button onClick={() => setVisible(!visible)}
           className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center relative"
           style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))' }}>
