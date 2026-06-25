@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import {
   FiHome, FiImage, FiMessageCircle, FiCalendar, FiClock, FiBarChart2,
   FiSettings, FiLogOut, FiMenu, FiX, FiHeart, FiGlobe, FiUser,
-  FiZap, FiGift, FiShield, FiBell
+  FiZap, FiGift, FiShield, FiBell, FiLock, FiStar, FiList
 } from 'react-icons/fi'
 import { signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -32,9 +32,12 @@ const navGroups = [
   {
     label: 'مميزات',
     items: [
-      { href: '/challenges',    label: 'التحديات',       icon: FiZap },
-      { href: '/date-ideas',    label: 'أفكار تواريخ',   icon: FiGift },
-      { href: '/compatibility', label: 'اختبار التوافق', icon: FiHeart },
+      { href: '/challenges',      label: 'التحديات',       icon: FiZap },
+      { href: '/date-ideas',      label: 'أفكار تواريخ',   icon: FiGift },
+      { href: '/compatibility',   label: 'اختبار التوافق', icon: FiHeart },
+      { href: '/secret-messages', label: 'الرسائل السرية', icon: FiLock },
+      { href: '/time-capsules',   label: 'كبسولة الوقت',   icon: FiClock },
+      { href: '/bucket-list',     label: 'قائمة أحلامنا',  icon: FiStar },
     ]
   },
   {

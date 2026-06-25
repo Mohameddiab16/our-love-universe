@@ -5,10 +5,12 @@ import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
-import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye } from 'react-icons/fi'
+import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye, FiGrid, FiMap } from 'react-icons/fi'
 import { useApp } from '@/contexts/AppContext'
 import { useSiteTexts } from '@/lib/useSiteTexts'
+import dynamic from 'next/dynamic'
 
+const MemoryMapView = dynamic(() => import('@/components/MemoryMapView'), { ssr: false })
 
 interface Memory {
   id: string
@@ -17,10 +19,12 @@ interface Memory {
   location: string | null
   date: string
   image_url: string | null
+  latitude: number | null
+  longitude: number | null
   created_at: string
 }
 
-const emptyForm = { title: '', description: '', location: '', date: new Date().toISOString().split('T')[0] }
+const emptyForm = { title: '', description: '', location: '', date: new Date().toISOString().split('T')[0], latitude: '', longitude: '' }
 
 export default function MemoriesPage() {
   const { activeWorldId, activeWorldOwnerId } = useApp()
@@ -35,6 +39,7 @@ export default function MemoriesPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [userId, setUserId] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -82,7 +87,7 @@ export default function MemoriesPage() {
 
   const openEdit = (m: Memory) => {
     setEditTarget(m)
-    setForm({ title: m.title, description: m.description, location: m.location || '', date: m.date })
+    setForm({ title: m.title, description: m.description, location: m.location || '', date: m.date, latitude: m.latitude?.toString() || '', longitude: m.longitude?.toString() || '' })
     setImageFile(null)
     setImagePreview(m.image_url || null)
     setSaveError('')
@@ -128,6 +133,8 @@ export default function MemoriesPage() {
         location: form.location || null,
         date: form.date,
         image_url: imageUrl,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
       }).eq('id', editTarget.id)
       if (error) { setSaveError('حدث خطأ في الحفظ: ' + error.message); setSaving(false); return }
     } else {
@@ -139,6 +146,8 @@ export default function MemoriesPage() {
         date: form.date,
         image_url: imageUrl,
         world_id: activeWorldId || null,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
       })
       if (error) { setSaveError('حدث خطأ في الحفظ: ' + error.message); setSaving(false); return }
     }
@@ -173,9 +182,23 @@ export default function MemoriesPage() {
               </h1>
               <p className="text-gray-500 text-sm mt-1">{t('memories_subtitle', 'كل لحظة جميلة نعيشها معاً 💕')}</p>
             </div>
-            <button onClick={openAdd} className="btn-primary flex items-center gap-2 self-start sm:self-auto">
-              <FiPlus /> ذكرى جديدة
-            </button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <div className="flex rounded-xl overflow-hidden border border-pink-100">
+                <button onClick={() => setViewMode('grid')}
+                  className={`px-3 py-2 text-sm flex items-center gap-1 transition-all ${viewMode === 'grid' ? 'text-white' : 'text-gray-400 bg-white'}`}
+                  style={viewMode === 'grid' ? { background: 'linear-gradient(135deg, var(--primary), var(--secondary))' } : {}}>
+                  <FiGrid size={14} /> قائمة
+                </button>
+                <button onClick={() => setViewMode('map')}
+                  className={`px-3 py-2 text-sm flex items-center gap-1 transition-all ${viewMode === 'map' ? 'text-white' : 'text-gray-400 bg-white'}`}
+                  style={viewMode === 'map' ? { background: 'linear-gradient(135deg, var(--primary), var(--secondary))' } : {}}>
+                  <FiMap size={14} /> خريطة
+                </button>
+              </div>
+              <button onClick={openAdd} className="btn-primary flex items-center gap-2">
+                <FiPlus /> ذكرى جديدة
+              </button>
+            </div>
           </div>
 
           <div className="relative mb-6">
@@ -184,11 +207,15 @@ export default function MemoriesPage() {
               onChange={e => setSearch(e.target.value)} className="input-field pr-10" />
           </div>
 
-          {loading ? (
+          {viewMode === 'map' && !loading && (
+            <MemoryMapView memories={filtered} />
+          )}
+
+          {viewMode === 'grid' && loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3,4,5,6].map(i => <div key={i} className="memory-card h-48 bg-gray-50 animate-pulse" />)}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : viewMode === 'grid' && filtered.length === 0 ? (
             <div className="text-center py-20">
               <div className="text-6xl mb-4">📸</div>
               <p className="text-xl font-semibold text-gray-700 mb-2">
@@ -201,7 +228,7 @@ export default function MemoriesPage() {
                 </button>
               )}
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(memory => (
                 <div key={memory.id} className="memory-card group relative overflow-hidden">
@@ -247,7 +274,7 @@ export default function MemoriesPage() {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </main>
       </div>
 
@@ -302,6 +329,19 @@ export default function MemoriesPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ *</label>
             <input type="date" value={form.date}
               onChange={e => setForm({ ...form, date: e.target.value })} className="input-field" required />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              🗺️ إحداثيات الخريطة <span className="text-gray-400 font-normal">(اختياري)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="number" step="any" placeholder="خط العرض (Lat)" value={form.latitude}
+                onChange={e => setForm({ ...form, latitude: e.target.value })} className="input-field text-sm" />
+              <input type="number" step="any" placeholder="خط الطول (Lng)" value={form.longitude}
+                onChange={e => setForm({ ...form, longitude: e.target.value })} className="input-field text-sm" />
+            </div>
+            <p className="text-xs text-gray-400 mt-1">انسخ الإحداثيات من Google Maps وضعها هنا</p>
           </div>
 
           {saveError && (

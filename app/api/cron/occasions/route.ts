@@ -67,6 +67,53 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ---- كبسولات الوقت التي تُفتح اليوم ----
+  const { data: capsules } = await supabase
+    .from('time_capsules')
+    .select('id, title, user_id, world_id')
+    .eq('open_at', fmt(today))
+
+  for (const cap of capsules || []) {
+    notifications.push({
+      user_id: cap.user_id,
+      title: `كبسولة الوقت جاهزة للفتح! ⏳`,
+      body: cap.title,
+      type: 'success',
+    })
+    if (cap.world_id) {
+      const { data: members } = await supabase
+        .from('world_members').select('user_id').eq('world_id', cap.world_id)
+      for (const m of members || []) {
+        if (m.user_id !== cap.user_id)
+          notifications.push({ user_id: m.user_id, title: `كبسولة الوقت جاهزة للفتح! ⏳`, body: cap.title, type: 'success' })
+      }
+      const { data: world } = await supabase.from('worlds').select('owner_id').eq('id', cap.world_id).single()
+      if (world && world.owner_id !== cap.user_id)
+        notifications.push({ user_id: world.owner_id, title: `كبسولة الوقت جاهزة للفتح! ⏳`, body: cap.title, type: 'success' })
+    }
+  }
+
+  // ---- رسائل سرية تُكشف اليوم ----
+  const { data: secrets } = await supabase
+    .from('secret_messages')
+    .select('id, title, user_id, world_id')
+    .eq('reveal_at', fmt(today))
+
+  for (const sec of secrets || []) {
+    notifications.push({ user_id: sec.user_id, title: `رسالة سرية انكشفت! 💌`, body: sec.title, type: 'message' })
+    if (sec.world_id) {
+      const { data: members } = await supabase
+        .from('world_members').select('user_id').eq('world_id', sec.world_id)
+      for (const m of members || []) {
+        if (m.user_id !== sec.user_id)
+          notifications.push({ user_id: m.user_id, title: `رسالة سرية انكشفت! 💌`, body: sec.title, type: 'message' })
+      }
+      const { data: world } = await supabase.from('worlds').select('owner_id').eq('id', sec.world_id).single()
+      if (world && world.owner_id !== sec.user_id)
+        notifications.push({ user_id: world.owner_id, title: `رسالة سرية انكشفت! 💌`, body: sec.title, type: 'message' })
+    }
+  }
+
   if (notifications.length > 0) {
     await supabase.from('notifications').insert(notifications)
   }
