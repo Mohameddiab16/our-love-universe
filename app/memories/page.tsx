@@ -41,7 +41,37 @@ export default function MemoriesPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [gettingLocation, setGettingLocation] = useState(false)
   const imageRef = useRef<HTMLInputElement>(null)
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert('المتصفح لا يدعم تحديد الموقع')
+      return
+    }
+    setGettingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ar`
+          )
+          const data = await res.json()
+          const name = data.display_name?.split('،')[0]?.trim() || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+          setForm(f => ({ ...f, location: name, latitude: latitude.toString(), longitude: longitude.toString() }))
+        } catch {
+          setForm(f => ({ ...f, latitude: latitude.toString(), longitude: longitude.toString() }))
+        }
+        setGettingLocation(false)
+      },
+      () => {
+        alert('تعذّر الحصول على موقعك. تأكد من إذن الموقع.')
+        setGettingLocation(false)
+      },
+      { timeout: 10000 }
+    )
+  }
 
   useEffect(() => { loadMemories() }, [activeWorldId])
 
@@ -316,30 +346,31 @@ export default function MemoriesPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">المكان</label>
-            <div className="relative">
-              <FiMapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-400" />
-              <input type="text" placeholder="أين كانت هذه اللحظة؟" value={form.location}
-                onChange={e => setForm({ ...form, location: e.target.value })} className="input-field pr-10" />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <FiMapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-400" />
+                <input type="text" placeholder="أين كانت هذه اللحظة؟" value={form.location}
+                  onChange={e => setForm({ ...form, location: e.target.value })} className="input-field pr-10" />
+              </div>
+              <button type="button" onClick={handleGetLocation} disabled={gettingLocation}
+                className="flex-shrink-0 px-4 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))' }}>
+                {gettingLocation ? '⏳' : '📍 موقعي'}
+              </button>
             </div>
+            {form.latitude && form.longitude && (
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-green-600">✅ تم تحديد الموقع على الخريطة</p>
+                <button type="button" onClick={() => setForm(f => ({ ...f, latitude: '', longitude: '' }))}
+                  className="text-xs text-red-400 hover:text-red-600">إزالة</button>
+              </div>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ *</label>
             <input type="date" value={form.date}
               onChange={e => setForm({ ...form, date: e.target.value })} className="input-field" required />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              🗺️ إحداثيات الخريطة <span className="text-gray-400 font-normal">(اختياري)</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" step="any" placeholder="خط العرض (Lat)" value={form.latitude}
-                onChange={e => setForm({ ...form, latitude: e.target.value })} className="input-field text-sm" />
-              <input type="number" step="any" placeholder="خط الطول (Lng)" value={form.longitude}
-                onChange={e => setForm({ ...form, longitude: e.target.value })} className="input-field text-sm" />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">انسخ الإحداثيات من Google Maps وضعها هنا</p>
           </div>
 
           {saveError && (
