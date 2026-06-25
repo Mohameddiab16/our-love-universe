@@ -83,7 +83,7 @@ export default function Navbar() {
     solo:   { label: 'فردي',   cls: 'plan-couple' },
     couple: { label: 'ثنائي',  cls: 'plan-couple' },
     family: { label: 'عائلي',  cls: 'plan-family' },
-  } as Record<string, { label: string; cls: string }>)[plan] || { label: 'مجاني', cls: 'plan-free' }
+  } as Record<string, { label: string; cls: string }>)[plan] || { label: 'فردي', cls: 'plan-couple' }
 
   const SidebarContent = () => (
     <>

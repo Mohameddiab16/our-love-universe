@@ -9,37 +9,21 @@ import { FiCheckCircle, FiCreditCard, FiTag, FiZap } from 'react-icons/fi'
 
 const plans = [
   {
-    id: 'free',
-    name: 'مجاني 🌟',
-    price: 0,
-    priceLabel: 'مجاناً',
-    color: 'from-gray-400 to-gray-600',
-    features: [
-      '✅ ذكريات غير محدودة',
-      '✅ رسائل الحب',
-      '✅ المناسبات الأساسية',
-      '✅ الخط الزمني',
-      '❌ عالم ثنائي',
-      '❌ دعوة شريك',
-      '❌ تحديات يومية',
-      '❌ إحصائيات متقدمة',
-    ],
-  },
-  {
     id: 'solo',
     name: 'فردي 👤',
     price: 10,
     priceLabel: '$10 / سنة',
     color: 'from-blue-400 to-indigo-600',
+    icon: '👤',
     features: [
-      '✅ كل مزايا المجاني',
+      '✅ ذكريات غير محدودة',
+      '✅ رسائل الحب',
+      '✅ المناسبات والخط الزمني',
       '✅ تحديات يومية',
       '✅ إحصائيات متقدمة',
       '✅ أفكار تواريخ',
       '✅ اختبار التوافق',
       '❌ عالم ثنائي مشترك',
-      '❌ دعوة شريك',
-      '❌ عالم عائلي',
     ],
   },
   {
@@ -48,15 +32,16 @@ const plans = [
     price: 20,
     priceLabel: '$20 / سنة',
     color: 'from-pink-400 to-rose-600',
+    icon: '💑',
     badge: 'الأكثر شيوعاً',
     features: [
-      '✅ كل مزايا المجاني',
+      '✅ كل مزايا الفردي',
       '✅ عالم ثنائي مشترك',
       '✅ دعوة شريكك',
+      '✅ رسائل وذكريات مشتركة',
       '✅ تحديات يومية',
       '✅ إحصائيات متقدمة',
       '✅ أفكار تواريخ',
-      '✅ اختبار التوافق',
       '❌ عالم عائلي',
     ],
   },
@@ -66,6 +51,7 @@ const plans = [
     price: 50,
     priceLabel: '$50 / سنة',
     color: 'from-purple-400 to-violet-600',
+    icon: '👨‍👩‍👧‍👦',
     features: [
       '✅ كل مزايا الثنائي',
       '✅ عالم عائلي (حتى 6 أفراد)',
@@ -186,12 +172,12 @@ export default function SubscriptionPage() {
             <div className="glass-card rounded-2xl p-5 mb-7 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
                 style={{ background: 'linear-gradient(135deg, var(--light), #ede9fe)' }}>
-                {plan === 'free' ? '🌟' : plan === 'couple' ? '💑' : '👨‍👩‍👧‍👦'}
+                {plan === 'solo' ? '👤' : plan === 'couple' ? '💑' : plan === 'family' ? '👨‍👩‍👧‍👦' : '⭐'}
               </div>
               <div>
                 <p className="font-bold text-gray-800 dark:text-white">
                   خطتك الحالية: <span className="gradient-text capitalize">
-                    {plan === 'free' ? 'مجاني' : plan === 'couple' ? 'ثنائي' : 'عائلي'}
+                    {plan === 'solo' ? 'فردي' : plan === 'couple' ? 'ثنائي' : plan === 'family' ? 'عائلي' : plan}
                   </span>
                 </p>
                 {current.expires_at && (
@@ -204,7 +190,7 @@ export default function SubscriptionPage() {
           )}
 
           {/* Plans Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
             {plans.map(p => (
               <div key={p.id} className={`memory-card relative flex flex-col ${plan === p.id ? 'ring-2' : ''}`}
                 style={plan === p.id ? { '--tw-ring-color': 'var(--primary)' } as any : {}}>
@@ -214,7 +200,7 @@ export default function SubscriptionPage() {
                   </div>
                 )}
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${p.color} flex items-center justify-center text-2xl mb-4 shadow-md`}>
-                  {p.id === 'free' ? '🌟' : p.id === 'couple' ? '💑' : '👨‍👩‍👧‍👦'}
+                  {p.icon}
                 </div>
                 <h3 className="font-bold text-lg mb-1">{p.name}</h3>
                 <p className="text-2xl font-bold gradient-text mb-4">{p.priceLabel}</p>
@@ -227,8 +213,6 @@ export default function SubscriptionPage() {
                   <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-50 text-green-600 font-semibold text-sm">
                     <FiCheckCircle /> خطتك الحالية
                   </div>
-                ) : p.price === 0 ? (
-                  <button className="py-3 rounded-xl text-sm font-semibold border-2 border-gray-200 text-gray-500">مجاني دائماً</button>
                 ) : (
                   <button
                     onClick={() => handleCheckout(p.id)}
