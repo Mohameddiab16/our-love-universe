@@ -13,8 +13,10 @@ interface AppContextType {
   setLang: (l: Lang) => void
   activeWorldId: string | null
   setActiveWorldId: (id: string | null) => void
-  plan: 'free' | 'couple' | 'family'
-  setPlan: (p: 'free' | 'couple' | 'family') => void
+  activeWorldOwnerId: string | null
+  setActiveWorldOwner: (worldId: string | null, ownerId: string | null) => void
+  plan: 'free' | 'couple' | 'family' | 'solo'
+  setPlan: (p: 'free' | 'couple' | 'family' | 'solo') => void
   totalPoints: number
   setTotalPoints: (n: number) => void
 }
@@ -26,7 +28,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [darkMode, setDarkModeState] = useState(false)
   const [lang, setLangState] = useState<Lang>('ar')
   const [activeWorldId, setActiveWorldId] = useState<string | null>(null)
-  const [plan, setPlan] = useState<'free' | 'couple' | 'family'>('free')
+  const [activeWorldOwnerId, setActiveWorldOwnerId] = useState<string | null>(null)
+  const [plan, setPlan] = useState<'free' | 'couple' | 'family' | 'solo'>('free')
   const [totalPoints, setTotalPoints] = useState(0)
 
   useEffect(() => {
@@ -34,10 +37,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const savedDark = localStorage.getItem('darkMode') === 'true'
     const savedLang = (localStorage.getItem('lang') as Lang) || 'ar'
     const savedWorld = localStorage.getItem('activeWorldId')
+    const savedOwner = localStorage.getItem('activeWorldOwnerId')
     setThemeState(savedTheme)
     setDarkModeState(savedDark)
     setLangState(savedLang)
     if (savedWorld) setActiveWorldId(savedWorld)
+    if (savedOwner) setActiveWorldOwnerId(savedOwner)
     applyTheme(savedTheme, savedDark)
     document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr'
     document.documentElement.lang = savedLang
@@ -68,10 +73,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem('activeWorldId')
   }
 
+  const setActiveWorldOwner = (worldId: string | null, ownerId: string | null) => {
+    setActiveWorldId(worldId)
+    setActiveWorldOwnerId(ownerId)
+    if (worldId) localStorage.setItem('activeWorldId', worldId)
+    else localStorage.removeItem('activeWorldId')
+    if (ownerId) localStorage.setItem('activeWorldOwnerId', ownerId)
+    else localStorage.removeItem('activeWorldOwnerId')
+  }
+
   return (
     <AppContext.Provider value={{
       theme, setTheme, darkMode, setDarkMode,
-      lang, setLang, activeWorldId, setActiveWorldId: handleSetWorld,
+      lang, setLang,
+      activeWorldId, setActiveWorldId: handleSetWorld,
+      activeWorldOwnerId, setActiveWorldOwner,
       plan, setPlan, totalPoints, setTotalPoints,
     }}>
       {children}

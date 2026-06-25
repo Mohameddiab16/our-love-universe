@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useApp } from '@/contexts/AppContext'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const { activeWorldOwnerId } = useApp()
   const [loading, setLoading] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [bgUrl, setBgUrl] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -18,13 +21,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         return
       }
       setAuthed(true)
-      // Load background
-      const { data } = await supabase
-        .from('profiles')
-        .select('background_url')
-        .eq('id', session.user.id)
-        .single()
-      if (data?.background_url) setBgUrl(data.background_url)
+      setCurrentUserId(session.user.id)
       setLoading(false)
     })
 
@@ -34,6 +31,20 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe()
   }, [router])
+
+  // Load background - either from active world owner or current user
+  useEffect(() => {
+    if (!currentUserId) return
+    const targetId = activeWorldOwnerId || currentUserId
+    supabase
+      .from('profiles')
+      .select('background_url')
+      .eq('id', targetId)
+      .single()
+      .then(({ data }) => {
+        setBgUrl(data?.background_url || null)
+      })
+  }, [currentUserId, activeWorldOwnerId])
 
   if (loading) {
     return (

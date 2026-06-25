@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useApp } from '@/contexts/AppContext'
 import { FiMusic, FiPlay, FiPause, FiVolume2, FiVolumeX } from 'react-icons/fi'
 
 export default function MusicPlayer() {
+  const { activeWorldOwnerId } = useApp()
   const audioRef = useRef<HTMLAudioElement>(null)
   const [musicUrl, setMusicUrl] = useState<string | null>(null)
   const [musicName, setMusicName] = useState('')
@@ -12,25 +14,41 @@ export default function MusicPlayer() {
   const [muted, setMuted] = useState(false)
   const [volume, setVolume] = useState(0.5)
   const [visible, setVisible] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
+  // Get current user once
   useEffect(() => {
-    loadMusic()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
   }, [])
 
-  const loadMusic = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
+  // Load music whenever user or active world changes
+  useEffect(() => {
+    if (!currentUserId) return
+    const targetId = activeWorldOwnerId || currentUserId
+    loadMusic(targetId)
+  }, [currentUserId, activeWorldOwnerId])
+
+  const loadMusic = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
       .select('music_url, music_name')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single()
+
     if (data?.music_url) {
-      setMusicUrl(data.music_url)
-      setMusicName(data.music_name || 'أغنيتنا 💕')
+      if (data.music_url !== musicUrl) {
+        setMusicUrl(data.music_url)
+        setMusicName(data.music_name || 'أغنيتنا 💕')
+      }
+    } else {
+      setMusicUrl(null)
+      if (audioRef.current) {
+        audioRef.current.pause()
+        setPlaying(false)
+      }
     }
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -38,15 +56,7 @@ export default function MusicPlayer() {
     audioRef.current.src = musicUrl
     audioRef.current.volume = volume
     audioRef.current.loop = true
-    const tryPlay = async () => {
-      try {
-        await audioRef.current!.play()
-        setPlaying(true)
-      } catch {
-        setPlaying(false)
-      }
-    }
-    tryPlay()
+    audioRef.current.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
   }, [musicUrl])
 
   useEffect(() => {
@@ -65,12 +75,11 @@ export default function MusicPlayer() {
     }
   }
 
-  if (loading || !musicUrl) return null
+  if (!musicUrl) return null
 
   return (
     <>
       <audio ref={audioRef} loop preload="auto" />
-
       <div className="fixed bottom-6 left-6 z-50 flex flex-col items-end gap-2">
         {visible && (
           <div className="glass-card rounded-2xl p-4 w-56 shadow-xl animate-fadeIn">
@@ -91,7 +100,6 @@ export default function MusicPlayer() {
             </div>
           </div>
         )}
-
         <button onClick={() => setVisible(!visible)}
           className="w-12 h-12 rounded-full text-white shadow-xl flex items-center justify-center relative"
           style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))' }}>

@@ -5,7 +5,8 @@ import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
-import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX } from 'react-icons/fi'
+import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye } from 'react-icons/fi'
+import { useApp } from '@/contexts/AppContext'
 
 interface Memory {
   id: string
@@ -20,6 +21,7 @@ interface Memory {
 const emptyForm = { title: '', description: '', location: '', date: new Date().toISOString().split('T')[0] }
 
 export default function MemoriesPage() {
+  const { activeWorldOwnerId } = useApp()
   const [memories, setMemories] = useState<Memory[]>([])
   const [filtered, setFiltered] = useState<Memory[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,7 +37,7 @@ export default function MemoriesPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const imageRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { loadMemories() }, [])
+  useEffect(() => { loadMemories() }, [activeWorldOwnerId])
 
   useEffect(() => {
     const q = search.toLowerCase()
@@ -50,10 +52,11 @@ export default function MemoriesPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setUserId(user.id)
+    const targetId = activeWorldOwnerId || user.id
     const { data, error } = await supabase
       .from('memories')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', targetId)
       .order('date', { ascending: false })
     if (!error) {
       setMemories(data || [])
@@ -149,6 +152,13 @@ export default function MemoriesPage() {
       <div className="flex min-h-screen">
         <Navbar />
         <main className="flex-1 md:mr-64 p-4 md:p-8 pt-16 md:pt-8">
+          {activeWorldOwnerId && (
+            <div className="mb-4 p-3 rounded-2xl flex items-center gap-2 text-sm"
+              style={{ background: 'linear-gradient(135deg, var(--light), #ede9fe)' }}>
+              <FiEye style={{ color: 'var(--primary)' }} size={15} />
+              <span className="gradient-text font-medium">أنت تشاهد ذكريات صاحب العالم</span>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold gradient-text flex items-center gap-2">
