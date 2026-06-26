@@ -247,9 +247,16 @@ export default function TimelinePage() {
 
                 {selected.song_url && getYouTubeId(selected.song_url) && (
                   <div>
-                    <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
-                      <FiMusic size={14} className="text-pink-400" /> الأغنية 🎵
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <FiMusic size={14} className="text-pink-400" /> الأغنية 🎵
+                      </p>
+                      <a href={selected.song_url} target="_blank" rel="noopener noreferrer"
+                        className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full text-white font-medium"
+                        style={{ background: 'linear-gradient(135deg, #ff0000, #cc0000)' }}>
+                        ▶ افتح في يوتيوب
+                      </a>
+                    </div>
                     <div className="rounded-2xl overflow-hidden">
                       <iframe
                         width="100%"

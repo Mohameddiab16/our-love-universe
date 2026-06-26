@@ -56,6 +56,15 @@ export default function OccasionsPage() {
 
   useEffect(() => { loadOccasions() }, [activeWorldId])
 
+  // Auto-open an occasion when navigated with ?open=<id> (e.g. from the dashboard)
+  useEffect(() => {
+    const openId = new URLSearchParams(window.location.search).get('open')
+    if (openId && occasions.length) {
+      const o = occasions.find(x => x.id === openId)
+      if (o) setSelected(o)
+    }
+  }, [occasions])
+
   const loadOccasions = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -186,7 +195,7 @@ export default function OccasionsPage() {
                               )}
                               <div className="flex items-center justify-between mt-3">
                                 <span className="text-xs text-gray-400">
-                                  {new Date(occ.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                  {(() => { const [y,m,d] = occ.date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) })()}
                                 </span>
                                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${days === 0 ? 'bg-pink-100 text-pink-600' : days <= 7 ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
                                   {days === 0 ? '🎉 اليوم!' : `${days} يوم`}
@@ -197,6 +206,14 @@ export default function OccasionsPage() {
                         </div>
                       )
                     })}
+
+                    {/* Add occasion card */}
+                    <button onClick={() => { setEditTarget(null); setForm(emptyForm); setModalOpen(true) }}
+                      className="memory-card flex flex-col items-center justify-center gap-2 border-2 border-dashed text-gray-400 hover:text-pink-500 hover:border-pink-300 transition-colors min-h-[110px]"
+                      style={{ borderColor: 'rgba(255,107,157,0.35)' }}>
+                      <FiPlus size={22} />
+                      <span className="text-sm font-medium">أضف مناسبة جديدة</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -219,10 +236,14 @@ export default function OccasionsPage() {
                             <div className="flex-1 min-w-0">
                               <h3 className="font-semibold text-gray-700 truncate">{occ.title}</h3>
                               <p className="text-xs text-gray-400">
-                                {new Date(occ.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                {(() => { const [y,m,d] = occ.date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) })()}
                               </p>
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={e => { e.stopPropagation(); setEditTarget(occ); setForm({ title: occ.title, description: occ.description || '', date: occ.date, type: occ.type, song_url: occ.song_url || '' }); setModalOpen(true) }}
+                                className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-400">
+                                <FiEdit2 size={12} />
+                              </button>
                               <button onClick={e => { e.stopPropagation(); handleDelete(occ.id) }}
                                 className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400">
                                 <FiTrash2 size={12} />
@@ -321,9 +342,16 @@ export default function OccasionsPage() {
 
                 {selected.song_url && getYouTubeId(selected.song_url) && (
                   <div>
-                    <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
-                      <FiMusic size={14} className="text-pink-400" /> أغنية المناسبة 🎵
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <FiMusic size={14} className="text-pink-400" /> أغنية المناسبة 🎵
+                      </p>
+                      <a href={selected.song_url} target="_blank" rel="noopener noreferrer"
+                        className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full text-white font-medium"
+                        style={{ background: 'linear-gradient(135deg, #ff0000, #cc0000)' }}>
+                        ▶ افتح في يوتيوب
+                      </a>
+                    </div>
                     <div className="rounded-2xl overflow-hidden">
                       <iframe
                         width="100%"

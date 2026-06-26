@@ -54,9 +54,16 @@ export default function ProfilePage() {
     let avatarUrl = profile?.avatar_url || null
     if (avatarFile) {
       const ext = avatarFile.name.split('.').pop()
-      const path = `avatars/${user.id}.${ext}`
-      await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true })
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      // Use the same public bucket that memory images use (avoids needing a separate bucket).
+      // Cache-bust with a timestamp so the new image shows immediately.
+      const path = `avatars/${user.id}-${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('love-media').upload(path, avatarFile, { upsert: true })
+      if (upErr) {
+        setSaving(false)
+        alert('تعذّر رفع الصورة: ' + upErr.message)
+        return
+      }
+      const { data } = supabase.storage.from('love-media').getPublicUrl(path)
       avatarUrl = data.publicUrl
     }
 

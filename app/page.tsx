@@ -182,7 +182,7 @@ export default function Dashboard() {
                     {upcomingOccasions.map(occ => {
                       const days = getDaysUntil(occ.date)
                       return (
-                        <div key={occ.id} className="memory-card flex items-center justify-between">
+                        <Link key={occ.id} href={`/occasions?open=${occ.id}`} className="memory-card flex items-center justify-between cursor-pointer">
                           <div className="flex items-center gap-3">
                             <span className="text-2xl">🎉</span>
                             <div>
@@ -195,7 +195,7 @@ export default function Dashboard() {
                           <span className={`badge ${days === 0 ? 'badge-pink' : days <= 7 ? 'badge-orange' : 'badge-green'}`}>
                             {days === 0 ? '🎉 اليوم' : `${days} يوم`}
                           </span>
-                        </div>
+                        </Link>
                       )
                     })}
                   </div>
@@ -225,19 +225,23 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-2">
                     {recentMemories.map(m => (
-                      <div key={m.id} className="memory-card flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, var(--light), #ede9fe)' }}>
-                          <FiImage style={{ color: 'var(--primary)' }} />
-                        </div>
+                      <Link key={m.id} href={`/memories?open=${m.id}`} className="memory-card flex items-center gap-3 cursor-pointer">
+                        {m.image_url ? (
+                          <img src={m.image_url} alt={m.title} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: 'linear-gradient(135deg, var(--light), #ede9fe)' }}>
+                            <FiImage style={{ color: 'var(--primary)' }} />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate">{m.title}</p>
                           <div className="flex items-center gap-2">
                             {m.location && <span className="text-xs text-gray-400 flex items-center gap-0.5"><FiMapPin size={9} /> {m.location}</span>}
-                            <span className="text-xs text-gray-400">{new Date(m.date).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}</span>
+                            <span className="text-xs text-gray-400">{(() => { const [y,mo,d] = m.date.split('-').map(Number); return new Date(y,mo-1,d).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) })()}</span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}

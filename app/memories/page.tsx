@@ -86,6 +86,15 @@ export default function MemoriesPage() {
 
   useEffect(() => { loadMemories() }, [activeWorldId])
 
+  // Auto-open a memory when navigated with ?open=<id> (e.g. from the dashboard)
+  useEffect(() => {
+    const openId = new URLSearchParams(window.location.search).get('open')
+    if (openId && memories.length) {
+      const m = memories.find(x => x.id === openId)
+      if (m) setViewMemory(m)
+    }
+  }, [memories])
+
   useEffect(() => {
     const q = search.toLowerCase()
     setFiltered(memories.filter(m =>
@@ -368,9 +377,16 @@ export default function MemoriesPage() {
 
               {viewMemory.song_url && getYouTubeId(viewMemory.song_url) && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
-                    <FiMusic size={14} className="text-pink-400" /> أغنية الذكرى 🎵
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                      <FiMusic size={14} className="text-pink-400" /> أغنية الذكرى 🎵
+                    </p>
+                    <a href={viewMemory.song_url} target="_blank" rel="noopener noreferrer"
+                      className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-full text-white font-medium"
+                      style={{ background: 'linear-gradient(135deg, #ff0000, #cc0000)' }}>
+                      ▶ افتح في يوتيوب
+                    </a>
+                  </div>
                   <div className="rounded-2xl overflow-hidden">
                     <iframe
                       width="100%"
