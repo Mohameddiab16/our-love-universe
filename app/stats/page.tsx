@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import { supabase } from '@/lib/supabase'
+import { useApp } from '@/contexts/AppContext'
 import { FiBarChart2, FiImage, FiMessageCircle, FiCalendar, FiMapPin, FiHeart, FiTrendingUp } from 'react-icons/fi'
 
 interface StatsData {
@@ -26,24 +27,31 @@ const moodLabels: Record<string, string> = {
 }
 
 export default function StatsPage() {
+  const { activeWorldId } = useApp()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadStats() }, [])
+  useEffect(() => { loadStats() }, [activeWorldId])
 
   const loadStats = async () => {
+    setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    // Match the scoping used by the memories/messages/occasions pages so counts agree.
+    const scope = (q: any) => activeWorldId
+      ? q.eq('world_id', activeWorldId)
+      : q.eq('user_id', user.id).is('world_id', null)
+
     const [{ data: memories }, { data: messages }, { data: occasions }] = await Promise.all([
-      supabase.from('memories').select('*').eq('user_id', user.id),
-      supabase.from('messages').select('*').eq('user_id', user.id),
-      supabase.from('occasions').select('*').eq('user_id', user.id),
+      scope(supabase.from('memories').select('*')),
+      scope(supabase.from('messages').select('*')),
+      scope(supabase.from('occasions').select('*')),
     ])
 
     // Top locations
     const locationCounts: Record<string, number> = {}
-    ;(memories || []).forEach(m => {
+    ;(memories || []).forEach((m: any) => {
       if (m.location) locationCounts[m.location] = (locationCounts[m.location] || 0) + 1
     })
     const topLocations = Object.entries(locationCounts)
@@ -53,7 +61,7 @@ export default function StatsPage() {
 
     // Memories by month (last 6 months)
     const monthCounts: Record<string, number> = {}
-    ;(memories || []).forEach(m => {
+    ;(memories || []).forEach((m: any) => {
       const key = m.date.substring(0, 7)
       monthCounts[key] = (monthCounts[key] || 0) + 1
     })
@@ -67,7 +75,7 @@ export default function StatsPage() {
 
     // Mood breakdown
     const moodCounts: Record<string, number> = {}
-    ;(messages || []).forEach(m => {
+    ;(messages || []).forEach((m: any) => {
       const mood = m.mood || 'other'
       moodCounts[mood] = (moodCounts[mood] || 0) + 1
     })
@@ -76,7 +84,7 @@ export default function StatsPage() {
       .sort((a, b) => b.count - a.count)
 
     // Days since first memory
-    const allDates = [...(memories || []).map(m => m.date), ...(occasions || []).map(o => o.date)]
+    const allDates = [...(memories || []).map((m: any) => m.date), ...(occasions || []).map((o: any) => o.date)]
     allDates.sort()
     const firstDate = allDates[0] || null
     const daysSince = firstDate

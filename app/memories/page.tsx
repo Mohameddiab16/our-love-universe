@@ -9,6 +9,9 @@ import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiH
 import { useApp } from '@/contexts/AppContext'
 import { useSiteTexts } from '@/lib/useSiteTexts'
 import MemoryMapView from '@/components/MemoryMapView'
+import dynamic from 'next/dynamic'
+
+const LocationPicker = dynamic(() => import('@/components/LocationPicker'), { ssr: false })
 
 interface Memory {
   id: string
@@ -49,6 +52,7 @@ export default function MemoriesPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
   const [viewMemory, setViewMemory] = useState<Memory | null>(null)
+  const [mapPickerOpen, setMapPickerOpen] = useState(false)
   const imageRef = useRef<HTMLInputElement>(null)
 
   const handleGetLocation = () => {
@@ -320,6 +324,19 @@ export default function MemoriesPage() {
         </main>
       </div>
 
+      {/* Map Location Picker */}
+      {mapPickerOpen && (
+        <LocationPicker
+          initialLat={form.latitude ? parseFloat(form.latitude) : null}
+          initialLng={form.longitude ? parseFloat(form.longitude) : null}
+          onClose={() => setMapPickerOpen(false)}
+          onConfirm={(lat, lng, name) => {
+            setForm(f => ({ ...f, latitude: lat.toString(), longitude: lng.toString(), location: name || f.location }))
+            setMapPickerOpen(false)
+          }}
+        />
+      )}
+
       {/* View Memory Modal */}
       {viewMemory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setViewMemory(null)}>
@@ -411,16 +428,21 @@ export default function MemoriesPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">المكان</label>
+            <div className="relative mb-2">
+              <FiMapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-400" />
+              <input type="text" placeholder="أين كانت هذه اللحظة؟" value={form.location}
+                onChange={e => setForm({ ...form, location: e.target.value })} className="input-field pr-10" />
+            </div>
             <div className="flex gap-2">
-              <div className="relative flex-1">
-                <FiMapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-400" />
-                <input type="text" placeholder="أين كانت هذه اللحظة؟" value={form.location}
-                  onChange={e => setForm({ ...form, location: e.target.value })} className="input-field pr-10" />
-              </div>
-              <button type="button" onClick={handleGetLocation} disabled={gettingLocation}
-                className="flex-shrink-0 px-4 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-60"
+              <button type="button" onClick={() => setMapPickerOpen(true)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-opacity flex items-center justify-center gap-1.5"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))' }}>
-                {gettingLocation ? '⏳' : '📍 موقعي'}
+                🗺️ اختر من الخريطة
+              </button>
+              <button type="button" onClick={handleGetLocation} disabled={gettingLocation}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
+                {gettingLocation ? '⏳ جاري...' : '📍 موقعي الحالي'}
               </button>
             </div>
             {form.latitude && form.longitude && (
