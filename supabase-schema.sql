@@ -226,25 +226,87 @@ CREATE POLICY "world_members_policy" ON world_members FOR ALL USING (
   EXISTS (SELECT 1 FROM worlds w WHERE w.id = world_id AND w.owner_id = auth.uid())
 );
 
+-- Memories / Messages / Occasions — collaborative shared-world access.
+-- A user can read/update/delete a row if they own it OR they participate in
+-- its world (world owner OR world member). Inserts must be under own user_id.
+-- (See migrations/collaborative-world-policies.sql for rationale.)
+
 -- Memories
-CREATE POLICY "memories_policy" ON memories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "memories_world_read" ON memories FOR SELECT USING (
-  auth.uid() = user_id OR
-  (world_id IS NOT NULL AND EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = memories.world_id AND wm.user_id = auth.uid()))
+CREATE POLICY "memories_select" ON memories FOR SELECT USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = memories.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = memories.world_id AND wm.user_id  = auth.uid())
+  ))
+);
+CREATE POLICY "memories_insert" ON memories FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "memories_update" ON memories FOR UPDATE USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = memories.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = memories.world_id AND wm.user_id  = auth.uid())
+  ))
+) WITH CHECK (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = memories.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = memories.world_id AND wm.user_id  = auth.uid())
+  ))
+);
+CREATE POLICY "memories_delete" ON memories FOR DELETE USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = memories.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = memories.world_id AND wm.user_id  = auth.uid())
+  ))
 );
 
 -- Messages
-CREATE POLICY "messages_policy" ON messages FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "messages_world_read" ON messages FOR SELECT USING (
-  auth.uid() = user_id OR
-  (world_id IS NOT NULL AND EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = messages.world_id AND wm.user_id = auth.uid()))
+CREATE POLICY "messages_select" ON messages FOR SELECT USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = messages.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = messages.world_id AND wm.user_id  = auth.uid())
+  ))
+);
+CREATE POLICY "messages_insert" ON messages FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "messages_update" ON messages FOR UPDATE USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = messages.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = messages.world_id AND wm.user_id  = auth.uid())
+  ))
+) WITH CHECK (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = messages.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = messages.world_id AND wm.user_id  = auth.uid())
+  ))
+);
+CREATE POLICY "messages_delete" ON messages FOR DELETE USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = messages.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = messages.world_id AND wm.user_id  = auth.uid())
+  ))
 );
 
 -- Occasions
-CREATE POLICY "occasions_policy" ON occasions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "occasions_world_read" ON occasions FOR SELECT USING (
-  auth.uid() = user_id OR
-  (world_id IS NOT NULL AND EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = occasions.world_id AND wm.user_id = auth.uid()))
+CREATE POLICY "occasions_select" ON occasions FOR SELECT USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = occasions.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = occasions.world_id AND wm.user_id  = auth.uid())
+  ))
+);
+CREATE POLICY "occasions_insert" ON occasions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "occasions_update" ON occasions FOR UPDATE USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = occasions.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = occasions.world_id AND wm.user_id  = auth.uid())
+  ))
+) WITH CHECK (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = occasions.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = occasions.world_id AND wm.user_id  = auth.uid())
+  ))
+);
+CREATE POLICY "occasions_delete" ON occasions FOR DELETE USING (
+  auth.uid() = user_id OR (world_id IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM worlds w        WHERE w.id        = occasions.world_id AND w.owner_id = auth.uid()) OR
+    EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = occasions.world_id AND wm.user_id  = auth.uid())
+  ))
 );
 
 -- Subscriptions
