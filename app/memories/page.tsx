@@ -464,8 +464,8 @@ export default function MemoriesPage() {
             {form.latitude && form.longitude && (
               <div className="flex items-center justify-between mt-2">
                 <p className="text-xs text-green-600">✅ تم تحديد الموقع على الخريطة</p>
-                <button type="button" onClick={() => setForm(f => ({ ...f, latitude: '', longitude: '' }))}
-                  className="text-xs text-red-400 hover:text-red-600">إزالة</button>
+                <button type="button" onClick={() => setForm(f => ({ ...f, latitude: '', longitude: '', location: '' }))}
+                  className="text-xs text-red-400 hover:text-red-600">إزالة الموقع بالكامل</button>
               </div>
             )}
           </div>

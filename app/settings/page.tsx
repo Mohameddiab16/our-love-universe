@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [musicName, setMusicName] = useState('')
   const [currentMusic, setCurrentMusic] = useState<string | null>(null)
   const [currentBg, setCurrentBg] = useState<string | null>(null)
+  const [bgClarity, setBgClarity] = useState(30)
   const [uploadingMusic, setUploadingMusic] = useState(false)
   const [uploadingBg, setUploadingBg] = useState(false)
   const [musicMsg, setMusicMsg] = useState('')
@@ -29,10 +30,11 @@ export default function SettingsPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       setUserId(user.id)
-      supabase.from('profiles').select('music_url, music_name, background_url').eq('id', user.id).single().then(({ data }) => {
+      supabase.from('profiles').select('music_url, music_name, background_url, background_opacity').eq('id', user.id).single().then(({ data }) => {
         setCurrentMusic(data?.music_url || null)
         setMusicName(data?.music_name || '')
         setCurrentBg(data?.background_url || null)
+        if (typeof data?.background_opacity === 'number') setBgClarity(data.background_opacity)
       })
     })
   }, [])
@@ -80,6 +82,11 @@ export default function SettingsPage() {
     await supabase.from('profiles').update({ background_url: null }).eq('id', userId)
     setCurrentBg(null)
     setBgMsg('تم حذف الخلفية')
+  }
+
+  const saveBgClarity = async (val: number) => {
+    setBgClarity(val)
+    if (userId) await supabase.from('profiles').update({ background_opacity: val }).eq('id', userId)
   }
 
   const handleLogout = async () => { await signOut(); router.push('/auth') }
@@ -176,7 +183,37 @@ export default function SettingsPage() {
                 {uploadingBg ? 'جاري الرفع...' : currentBg ? 'تغيير الخلفية' : 'رفع صورة خلفية'}
               </button>
               {bgMsg && <p className="text-sm text-center text-gray-500 mt-2">{bgMsg}</p>}
-              <p className="text-xs text-gray-400 text-center mt-2">ستظهر الصورة خلفية شفافة لكل صفحات الموقع 🌸</p>
+
+              {/* Clarity slider — only relevant when a background is set */}
+              {currentBg && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      🔆 درجة وضوح الصورة
+                    </label>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--light)', color: 'var(--primary)' }}>
+                      {bgClarity}%
+                    </span>
+                  </div>
+                  {/* Live preview */}
+                  <div className="relative rounded-xl overflow-hidden h-24 mb-3">
+                    <img src={currentBg} alt="preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0" style={{ backgroundColor: `rgba(255,255,255,${(100 - bgClarity) / 100})` }} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-semibold text-gray-700 bg-white/60 px-2 py-1 rounded-lg">معاينة 💕</span>
+                    </div>
+                  </div>
+                  <input type="range" min={0} max={100} step={5} value={bgClarity}
+                    onChange={e => saveBgClarity(Number(e.target.value))}
+                    className="w-full accent-pink-500" />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>باهتة</span>
+                    <span>واضحة جداً</span>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-400 text-center mt-2">ستظهر الصورة خلفية لكل صفحات الموقع 🌸</p>
             </div>
 
             {/* Themes */}
