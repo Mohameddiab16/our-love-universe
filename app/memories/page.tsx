@@ -259,11 +259,11 @@ export default function MemoriesPage() {
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(memory => (
-                <div key={memory.id} className="memory-card group relative overflow-hidden">
+                <div key={memory.id} className="memory-card group relative">
                   {/* Image */}
                   {memory.image_url && (
-                    <div className="w-full h-40 -mx-5 -mt-5 mb-4 overflow-hidden" style={{ width: 'calc(100% + 40px)' }}>
-                      <img src={memory.image_url} alt={memory.title} className="w-full h-full object-cover" />
+                    <div className="w-full mb-4 rounded-xl overflow-hidden">
+                      <img src={memory.image_url} alt={memory.title} className="w-full h-auto" />
                     </div>
                   )}
 
