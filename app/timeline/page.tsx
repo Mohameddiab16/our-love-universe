@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import { supabase } from '@/lib/supabase'
 import { useApp } from '@/contexts/AppContext'
-import { FiClock, FiImage, FiMessageCircle, FiCalendar, FiMapPin } from 'react-icons/fi'
+import { FiClock, FiImage, FiMessageCircle, FiCalendar, FiMapPin, FiX, FiMusic } from 'react-icons/fi'
 
 interface TimelineItem {
   id: string
@@ -16,6 +16,8 @@ interface TimelineItem {
   location?: string | null
   mood?: string | null
   occasionType?: string
+  image_url?: string | null
+  song_url?: string | null
 }
 
 const typeConfig = {
@@ -24,11 +26,22 @@ const typeConfig = {
   occasion: { icon: FiCalendar, color: 'from-yellow-400 to-orange-400', bg: 'bg-yellow-50', text: 'مناسبة', dot: 'bg-yellow-400' },
 }
 
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+  return match?.[1] || null
+}
+
+function fmtDate(date: string) {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
 export default function TimelinePage() {
   const { activeWorldId } = useApp()
   const [items, setItems] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'memory' | 'message' | 'occasion'>('all')
+  const [selected, setSelected] = useState<TimelineItem | null>(null)
 
   useEffect(() => { loadAll() }, [activeWorldId])
 
@@ -59,6 +72,7 @@ export default function TimelinePage() {
       ...(memories || []).map(m => ({
         id: m.id, type: 'memory' as const,
         title: m.title, description: m.description, date: m.date, location: m.location,
+        image_url: m.image_url, song_url: m.song_url,
       })),
       ...(messages || []).map(m => ({
         id: m.id, type: 'message' as const,
@@ -156,7 +170,7 @@ export default function TimelinePage() {
                             {/* Dot */}
                             <div className={`absolute -right-10 top-4 w-3 h-3 rounded-full ${config.dot} ring-2 ring-white shadow`} />
 
-                            <div className="memory-card">
+                            <div className="memory-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelected(item)}>
                               <div className="flex items-start gap-3">
                                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center flex-shrink-0`}>
                                   <Icon className="text-white text-base" />
@@ -193,6 +207,65 @@ export default function TimelinePage() {
           )}
         </main>
       </div>
+
+      {/* Detail Modal */}
+      {selected && (() => {
+        const config = typeConfig[selected.type]
+        const Icon = config.icon
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setSelected(null)}>
+            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setSelected(null)}
+                className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-800">
+                <FiX size={18} />
+              </button>
+
+              {selected.type === 'memory' && selected.image_url && (
+                <img src={selected.image_url} alt={selected.title} className="w-full h-auto rounded-t-3xl" />
+              )}
+
+              <div className="p-6">
+                <div className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full ${config.bg} font-medium mb-3`} style={{ color: '#666' }}>
+                  <Icon size={12} /> {config.text}
+                </div>
+                <h2 className="text-2xl font-bold gradient-text mb-3">{selected.title}</h2>
+                {selected.description && (
+                  <p className="text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{selected.description}</p>
+                )}
+
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <span className="text-sm text-gray-500 flex items-center gap-1">
+                    <FiCalendar size={13} className="text-pink-400" /> {fmtDate(selected.date)}
+                  </span>
+                  {selected.location && (
+                    <span className="text-sm text-pink-500 flex items-center gap-1 bg-pink-50 px-3 py-1 rounded-full">
+                      <FiMapPin size={12} /> {selected.location}
+                    </span>
+                  )}
+                </div>
+
+                {selected.type === 'memory' && selected.song_url && getYouTubeId(selected.song_url) && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
+                      <FiMusic size={14} className="text-pink-400" /> أغنية الذكرى 🎵
+                    </p>
+                    <div className="rounded-2xl overflow-hidden">
+                      <iframe
+                        width="100%"
+                        height="200"
+                        src={`https://www.youtube.com/embed/${getYouTubeId(selected.song_url)}?autoplay=1`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="border-0"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </AuthGuard>
   )
 }
