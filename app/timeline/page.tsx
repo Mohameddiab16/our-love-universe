@@ -81,6 +81,7 @@ export default function TimelinePage() {
       ...(occasions || []).map(o => ({
         id: o.id, type: 'occasion' as const,
         title: o.title, description: o.description || '', date: o.date, occasionType: o.type,
+        song_url: o.song_url,
       })),
     ]
 
@@ -244,10 +245,10 @@ export default function TimelinePage() {
                   )}
                 </div>
 
-                {selected.type === 'memory' && selected.song_url && getYouTubeId(selected.song_url) && (
+                {selected.song_url && getYouTubeId(selected.song_url) && (
                   <div>
                     <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
-                      <FiMusic size={14} className="text-pink-400" /> أغنية الذكرى 🎵
+                      <FiMusic size={14} className="text-pink-400" /> الأغنية 🎵
                     </p>
                     <div className="rounded-2xl overflow-hidden">
                       <iframe

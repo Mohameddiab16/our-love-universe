@@ -7,7 +7,7 @@ import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
 import { useApp } from '@/contexts/AppContext'
 import { useSiteTexts } from '@/lib/useSiteTexts'
-import { FiCalendar, FiPlus, FiTrash2, FiEdit2, FiHeart, FiStar, FiGift, FiClock } from 'react-icons/fi'
+import { FiCalendar, FiPlus, FiTrash2, FiEdit2, FiHeart, FiStar, FiGift, FiClock, FiMusic, FiX, FiMapPin } from 'react-icons/fi'
 
 interface Occasion {
   id: string
@@ -15,7 +15,13 @@ interface Occasion {
   description: string | null
   date: string
   type: string
+  song_url: string | null
   created_at: string
+}
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+  return match?.[1] || null
 }
 
 const types = [
@@ -26,7 +32,7 @@ const types = [
   { value: 'special', label: 'مناسبة خاصة', icon: '🎉', color: 'from-emerald-400 to-teal-500' },
 ]
 
-const emptyForm = { title: '', description: '', date: new Date().toISOString().split('T')[0], type: 'anniversary' }
+const emptyForm = { title: '', description: '', date: new Date().toISOString().split('T')[0], type: 'anniversary', song_url: '' }
 
 function getDaysUntil(dateStr: string) {
   // Force local timezone by appending T00:00:00 — avoids UTC-parse shifting date by 1 day
@@ -46,6 +52,7 @@ export default function OccasionsPage() {
   const [editTarget, setEditTarget] = useState<Occasion | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [selected, setSelected] = useState<Occasion | null>(null)
 
   useEffect(() => { loadOccasions() }, [activeWorldId])
 
@@ -74,11 +81,13 @@ export default function OccasionsPage() {
     if (editTarget) {
       await supabase.from('occasions').update({
         title: form.title, description: form.description || null, date: form.date, type: form.type,
+        song_url: form.song_url || null,
       }).eq('id', editTarget.id)
     } else {
       await supabase.from('occasions').insert({
         user_id: user.id, title: form.title, description: form.description || null,
         date: form.date, type: form.type, world_id: activeWorldId || null,
+        song_url: form.song_url || null,
       })
     }
     setModalOpen(false)
@@ -146,7 +155,7 @@ export default function OccasionsPage() {
                       const info = getTypeInfo(occ.type)
                       const days = getDaysUntil(occ.date)
                       return (
-                        <div key={occ.id} className="memory-card group relative overflow-hidden">
+                        <div key={occ.id} className="memory-card group relative overflow-hidden cursor-pointer" onClick={() => setSelected(occ)}>
                           <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${info.color}`} />
                           <div className="flex items-start gap-4 pr-2">
                             <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${info.color} flex items-center justify-center text-2xl shadow-md flex-shrink-0`}>
@@ -160,16 +169,21 @@ export default function OccasionsPage() {
                                   {occ.description && <p className="text-sm text-gray-500 mt-1">{occ.description}</p>}
                                 </div>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                  <button onClick={() => { setEditTarget(occ); setForm({ title: occ.title, description: occ.description || '', date: occ.date, type: occ.type }); setModalOpen(true) }}
+                                  <button onClick={e => { e.stopPropagation(); setEditTarget(occ); setForm({ title: occ.title, description: occ.description || '', date: occ.date, type: occ.type, song_url: occ.song_url || '' }); setModalOpen(true) }}
                                     className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-400">
                                     <FiEdit2 size={12} />
                                   </button>
-                                  <button onClick={() => handleDelete(occ.id)}
+                                  <button onClick={e => { e.stopPropagation(); handleDelete(occ.id) }}
                                     className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400">
                                     <FiTrash2 size={12} />
                                   </button>
                                 </div>
                               </div>
+                              {occ.song_url && getYouTubeId(occ.song_url) && (
+                                <span className="inline-flex items-center gap-1 text-xs text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full mt-2">
+                                  <FiMusic size={10} /> أغنية
+                                </span>
+                              )}
                               <div className="flex items-center justify-between mt-3">
                                 <span className="text-xs text-gray-400">
                                   {new Date(occ.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -197,7 +211,7 @@ export default function OccasionsPage() {
                     {past.map(occ => {
                       const info = getTypeInfo(occ.type)
                       return (
-                        <div key={occ.id} className="memory-card group opacity-70 hover:opacity-100 transition-opacity">
+                        <div key={occ.id} className="memory-card group opacity-70 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setSelected(occ)}>
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-xl flex-shrink-0">
                               {info.icon}
@@ -209,7 +223,7 @@ export default function OccasionsPage() {
                               </p>
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleDelete(occ.id)}
+                              <button onClick={e => { e.stopPropagation(); handleDelete(occ.id) }}
                                 className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400">
                                 <FiTrash2 size={12} />
                               </button>
@@ -258,6 +272,14 @@ export default function OccasionsPage() {
             <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
               className="input-field" required />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+              <FiMusic size={14} className="text-pink-400" /> أغنية المناسبة (اختياري)
+            </label>
+            <input type="url" placeholder="الصق رابط YouTube هنا..." value={form.song_url}
+              onChange={e => setForm({ ...form, song_url: e.target.value })} className="input-field" />
+            <p className="text-xs text-gray-400 mt-1">مثال: https://youtube.com/watch?v=...</p>
+          </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={saving} className="btn-primary flex-1 flex items-center justify-center gap-2">
               {saving ? 'جاري الحفظ...' : <><FiHeart /> {editTarget ? 'حفظ' : 'إضافة'}</>}
@@ -269,6 +291,56 @@ export default function OccasionsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Detail Modal */}
+      {selected && (() => {
+        const info = getTypeInfo(selected.type)
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setSelected(null)}>
+            <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setSelected(null)}
+                className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-800">
+                <FiX size={18} />
+              </button>
+
+              <div className={`h-28 bg-gradient-to-br ${info.color} flex items-center justify-center text-6xl rounded-t-3xl`}>
+                {info.icon}
+              </div>
+
+              <div className="p-6">
+                <span className="text-xs text-gray-400">{info.label}</span>
+                <h2 className="text-2xl font-bold gradient-text mb-3">{selected.title}</h2>
+                {selected.description && (
+                  <p className="text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{selected.description}</p>
+                )}
+
+                <span className="text-sm text-gray-500 flex items-center gap-1 mb-4">
+                  <FiCalendar size={13} className="text-pink-400" />
+                  {(() => { const [y,m,d] = selected.date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) })()}
+                </span>
+
+                {selected.song_url && getYouTubeId(selected.song_url) && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
+                      <FiMusic size={14} className="text-pink-400" /> أغنية المناسبة 🎵
+                    </p>
+                    <div className="rounded-2xl overflow-hidden">
+                      <iframe
+                        width="100%"
+                        height="200"
+                        src={`https://www.youtube.com/embed/${getYouTubeId(selected.song_url)}?autoplay=1`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="border-0"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </AuthGuard>
   )
 }
