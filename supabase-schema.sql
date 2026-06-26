@@ -235,9 +235,17 @@ CREATE POLICY "memories_world_read" ON memories FOR SELECT USING (
 
 -- Messages
 CREATE POLICY "messages_policy" ON messages FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "messages_world_read" ON messages FOR SELECT USING (
+  auth.uid() = user_id OR
+  (world_id IS NOT NULL AND EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = messages.world_id AND wm.user_id = auth.uid()))
+);
 
 -- Occasions
 CREATE POLICY "occasions_policy" ON occasions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "occasions_world_read" ON occasions FOR SELECT USING (
+  auth.uid() = user_id OR
+  (world_id IS NOT NULL AND EXISTS (SELECT 1 FROM world_members wm WHERE wm.world_id = occasions.world_id AND wm.user_id = auth.uid()))
+);
 
 -- Subscriptions
 CREATE POLICY "subscriptions_own" ON user_subscriptions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

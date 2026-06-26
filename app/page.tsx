@@ -49,6 +49,14 @@ export default function Dashboard() {
     setUserId(user.id)
     setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'حبيبي')
 
+    // Scope every content query to the active world (or personal when none) so the
+    // dashboard counts match what the individual pages actually display.
+    const scope = (q: any) => activeWorldId
+      ? q.eq('world_id', activeWorldId)
+      : q.eq('user_id', user.id).is('world_id', null)
+
+    const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD in local time
+
     const [
       { count: mC, data: allMem },
       { count: msC },
@@ -57,10 +65,10 @@ export default function Dashboard() {
       { data: profile },
       { count: pc },
     ] = await Promise.all([
-      supabase.from('memories').select('*', { count: 'exact' }).eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
-      supabase.from('messages').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('occasions').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('occasions').select('*').eq('user_id', user.id).gte('date', new Date().toISOString().split('T')[0]).order('date').limit(3),
+      scope(supabase.from('memories').select('*', { count: 'exact' })).order('created_at', { ascending: false }).limit(3),
+      scope(supabase.from('messages').select('*', { count: 'exact', head: true })),
+      scope(supabase.from('occasions').select('*', { count: 'exact', head: true })),
+      scope(supabase.from('occasions').select('*')).gte('date', today).order('date').limit(3),
       supabase.from('profiles').select('pinned_counter').eq('id', user.id).single(),
       supabase.from('user_challenges').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     ])
@@ -99,7 +107,13 @@ export default function Dashboard() {
     setCounterModal(false)
   }
 
-  const getDaysUntil = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const getDaysUntil = (date: string) => {
+    const now = new Date()
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const [y, m, d] = date.split('-').map(Number)
+    const target = new Date(y, m - 1, d)
+    return Math.round((target.getTime() - todayLocal.getTime()) / (1000 * 60 * 60 * 24))
+  }
 
   const emojis = ['💕', '💑', '🎉', '🌙', '⭐', '🌸', '💍', '🏠', '✈️', '🎂', '❤️', '🌹']
 
@@ -174,7 +188,7 @@ export default function Dashboard() {
                             <div>
                               <p className="font-semibold text-sm">{occ.title}</p>
                               <p className="text-xs text-gray-400">
-                                {new Date(occ.date).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })}
+                                {(() => { const [y,m,d] = occ.date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' }) })()}
                               </p>
                             </div>
                           </div>
