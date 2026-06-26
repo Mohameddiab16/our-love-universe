@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { FiHeart, FiMail, FiLock, FiUser, FiPhone, FiEye, FiEyeOff, FiCamera, FiCheckCircle } from 'react-icons/fi'
@@ -18,6 +18,17 @@ export default function AuthPage() {
   const [avatar, setAvatar] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' })
+  const [signupsEnabled, setSignupsEnabled] = useState(true)
+
+  // Read whether account creation is currently allowed (admin-controlled)
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'signups_enabled').single()
+      .then(({ data }) => {
+        const enabled = data?.value !== false
+        setSignupsEnabled(enabled)
+        if (!enabled) setIsLogin(true)
+      })
+  }, [])
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -52,6 +63,15 @@ export default function AuthPage() {
         router.push('/')
       }
     } else {
+      // Re-check the live setting in case it was disabled after the page loaded
+      const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'signups_enabled').single()
+      if (setting?.value === false) {
+        setError('إنشاء الحسابات متوقف حالياً')
+        setSignupsEnabled(false)
+        setIsLogin(true)
+        setLoading(false)
+        return
+      }
       const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -132,7 +152,9 @@ export default function AuthPage() {
         <div className="glass-card rounded-3xl p-7">
           {/* Tabs */}
           <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
-            {[{ val: true, label: 'تسجيل الدخول' }, { val: false, label: 'إنشاء حساب' }].map(tab => (
+            {[{ val: true, label: 'تسجيل الدخول' }, { val: false, label: 'إنشاء حساب' }]
+              .filter(tab => tab.val || signupsEnabled)
+              .map(tab => (
               <button key={String(tab.val)}
                 onClick={() => { setIsLogin(tab.val); setError('') }}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
@@ -221,13 +243,19 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-5">
-            {isLogin ? 'ليس لديك حساب؟ ' : 'لديك حساب؟ '}
-            <button onClick={() => { setIsLogin(!isLogin); setError('') }}
-              className="font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
-              {isLogin ? 'أنشئ حساباً' : 'سجل دخولك'}
-            </button>
-          </p>
+          {signupsEnabled ? (
+            <p className="text-center text-xs text-gray-400 mt-5">
+              {isLogin ? 'ليس لديك حساب؟ ' : 'لديك حساب؟ '}
+              <button onClick={() => { setIsLogin(!isLogin); setError('') }}
+                className="font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+                {isLogin ? 'أنشئ حساباً' : 'سجل دخولك'}
+              </button>
+            </p>
+          ) : (
+            <p className="text-center text-xs text-gray-400 mt-5">
+              🔒 إنشاء الحسابات الجديدة متوقف حالياً
+            </p>
+          )}
         </div>
       </div>
     </div>

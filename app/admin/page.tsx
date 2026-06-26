@@ -7,7 +7,7 @@ import AuthGuard from '@/components/AuthGuard'
 import { supabase } from '@/lib/supabase'
 import {
   FiShield, FiUsers, FiBarChart2, FiSearch,
-  FiSlash, FiCheckCircle, FiEdit2, FiType, FiSave, FiX
+  FiSlash, FiCheckCircle, FiEdit2, FiType, FiSave, FiX, FiSettings, FiLock, FiUnlock
 } from 'react-icons/fi'
 
 interface User {
@@ -29,8 +29,12 @@ interface SiteText {
 export default function AdminPage() {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
-  const [tab, setTab] = useState<'stats' | 'users' | 'texts'>('stats')
+  const [tab, setTab] = useState<'stats' | 'users' | 'texts' | 'settings'>('stats')
   const [token, setToken] = useState('')
+
+  // Settings
+  const [signupsEnabled, setSignupsEnabled] = useState(true)
+  const [savingSetting, setSavingSetting] = useState(false)
 
   // Stats
   const [totalUsers, setTotalUsers] = useState(0)
@@ -60,8 +64,24 @@ export default function AdminPage() {
       setIsAdmin(true)
       loadStats()
       loadTexts()
+      loadSettings()
     })
   }, [])
+
+  const loadSettings = async () => {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'signups_enabled').single()
+    setSignupsEnabled(data?.value !== false)
+  }
+
+  const toggleSignups = async () => {
+    setSavingSetting(true)
+    const next = !signupsEnabled
+    const { error } = await supabase.from('app_settings')
+      .upsert({ key: 'signups_enabled', value: next, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+    setSavingSetting(false)
+    if (error) { alert('تعذّر الحفظ: ' + error.message); return }
+    setSignupsEnabled(next)
+  }
 
   useEffect(() => {
     const q = userSearch.toLowerCase()
@@ -163,6 +183,7 @@ export default function AdminPage() {
               { id: 'stats', label: 'الإحصائيات', icon: FiBarChart2 },
               { id: 'users', label: 'المستخدمون', icon: FiUsers },
               { id: 'texts', label: 'النصوص', icon: FiType },
+              { id: 'settings', label: 'الإعدادات', icon: FiSettings },
             ].map(t => (
               <button key={t.id} onClick={() => handleTabChange(t.id as any)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}
@@ -318,6 +339,46 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ===== SETTINGS ===== */}
+          {tab === 'settings' && (
+            <div className="space-y-4 max-w-xl">
+              <h2 className="font-bold text-gray-800 dark:text-white mb-2">إعدادات الموقع</h2>
+
+              <div className="glass-card rounded-2xl p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 ${signupsEnabled ? 'bg-green-500' : 'bg-red-500'}`}>
+                      {signupsEnabled ? <FiUnlock size={18} /> : <FiLock size={18} />}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 dark:text-white">إنشاء حسابات جديدة</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {signupsEnabled
+                          ? 'مسموح للزوار بإنشاء حسابات جديدة'
+                          : 'إنشاء الحسابات الجديدة متوقف — لا أحد يقدر يسجّل'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Toggle switch */}
+                  <button onClick={toggleSignups} disabled={savingSetting}
+                    className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ${signupsEnabled ? 'bg-green-500' : 'bg-gray-300'} disabled:opacity-60`}>
+                    <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all ${signupsEnabled ? 'right-1' : 'right-7'}`} />
+                  </button>
+                </div>
+                <div className={`mt-4 text-xs rounded-xl p-3 ${signupsEnabled ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                  {signupsEnabled
+                    ? '✅ الموقع مفتوح للتسجيل حالياً.'
+                    : '🔒 الموقع مقفول — صفحة "إنشاء حساب" مخفية ولن يقبل أي تسجيل جديد.'}
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400">
+                ملاحظة: تسجيل الدخول للأعضاء الحاليين يفضل شغّال دائماً. هذا الإعداد يوقف التسجيل الجديد فقط.
+              </p>
             </div>
           )}
         </main>
