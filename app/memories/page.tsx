@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import Modal from '@/components/Modal'
 import { supabase } from '@/lib/supabase'
-import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye, FiGrid, FiMap } from 'react-icons/fi'
+import { FiImage, FiPlus, FiMapPin, FiCalendar, FiSearch, FiTrash2, FiEdit2, FiHeart, FiCamera, FiX, FiEye, FiGrid, FiMap, FiMusic } from 'react-icons/fi'
 import { useApp } from '@/contexts/AppContext'
 import { useSiteTexts } from '@/lib/useSiteTexts'
 import MemoryMapView from '@/components/MemoryMapView'
@@ -17,12 +17,18 @@ interface Memory {
   location: string | null
   date: string
   image_url: string | null
+  song_url: string | null
   latitude: number | null
   longitude: number | null
   created_at: string
 }
 
-const emptyForm = { title: '', description: '', location: '', date: new Date().toISOString().split('T')[0], latitude: '', longitude: '' }
+const emptyForm = { title: '', description: '', location: '', date: new Date().toISOString().split('T')[0], latitude: '', longitude: '', song_url: '' }
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+  return match?.[1] || null
+}
 
 export default function MemoriesPage() {
   const { activeWorldId, activeWorldOwnerId } = useApp()
@@ -42,6 +48,7 @@ export default function MemoriesPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
+  const [viewMemory, setViewMemory] = useState<Memory | null>(null)
   const imageRef = useRef<HTMLInputElement>(null)
 
   const handleGetLocation = () => {
@@ -115,7 +122,7 @@ export default function MemoriesPage() {
 
   const openEdit = (m: Memory) => {
     setEditTarget(m)
-    setForm({ title: m.title, description: m.description, location: m.location || '', date: m.date, latitude: m.latitude?.toString() || '', longitude: m.longitude?.toString() || '' })
+    setForm({ title: m.title, description: m.description, location: m.location || '', date: m.date, latitude: m.latitude?.toString() || '', longitude: m.longitude?.toString() || '', song_url: m.song_url || '' })
     setImageFile(null)
     setImagePreview(m.image_url || null)
     setSaveError('')
@@ -161,6 +168,7 @@ export default function MemoriesPage() {
         location: form.location || null,
         date: form.date,
         image_url: imageUrl,
+        song_url: form.song_url || null,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
       }).eq('id', editTarget.id)
@@ -173,6 +181,7 @@ export default function MemoriesPage() {
         location: form.location || null,
         date: form.date,
         image_url: imageUrl,
+        song_url: form.song_url || null,
         world_id: activeWorldId || null,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
@@ -259,7 +268,7 @@ export default function MemoriesPage() {
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map(memory => (
-                <div key={memory.id} className="memory-card group relative">
+                <div key={memory.id} className="memory-card group relative cursor-pointer" onClick={() => setViewMemory(memory)}>
                   {/* Image */}
                   {memory.image_url && (
                     <div className="w-full mb-4 rounded-xl overflow-hidden">
@@ -269,15 +278,20 @@ export default function MemoriesPage() {
 
                   {/* Actions */}
                   <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button onClick={() => openEdit(memory)}
+                    <button onClick={e => { e.stopPropagation(); openEdit(memory) }}
                       className="w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-blue-400 hover:text-blue-600">
                       <FiEdit2 size={14} />
                     </button>
-                    <button onClick={() => handleDelete(memory.id)}
+                    <button onClick={e => { e.stopPropagation(); handleDelete(memory.id) }}
                       className="w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-red-400 hover:text-red-600">
                       <FiTrash2 size={14} />
                     </button>
                   </div>
+                  {memory.song_url && (
+                    <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-pink-400">
+                      <FiMusic size={14} />
+                    </div>
+                  )}
 
                   {!memory.image_url && (
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center mb-4">
@@ -305,6 +319,57 @@ export default function MemoriesPage() {
           ) : null}
         </main>
       </div>
+
+      {/* View Memory Modal */}
+      {viewMemory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setViewMemory(null)}>
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setViewMemory(null)}
+              className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-800">
+              <FiX size={18} />
+            </button>
+
+            {viewMemory.image_url && (
+              <img src={viewMemory.image_url} alt={viewMemory.title} className="w-full h-auto rounded-t-3xl" />
+            )}
+
+            <div className="p-6">
+              <h2 className="text-2xl font-bold gradient-text mb-3">{viewMemory.title}</h2>
+              <p className="text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{viewMemory.description}</p>
+
+              <div className="flex flex-wrap gap-3 mb-5">
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <FiCalendar size={13} className="text-pink-400" />
+                  {new Date(viewMemory.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
+                {viewMemory.location && (
+                  <span className="text-sm text-pink-500 flex items-center gap-1 bg-pink-50 px-3 py-1 rounded-full">
+                    <FiMapPin size={12} /> {viewMemory.location}
+                  </span>
+                )}
+              </div>
+
+              {viewMemory.song_url && getYouTubeId(viewMemory.song_url) && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
+                    <FiMusic size={14} className="text-pink-400" /> أغنية الذكرى 🎵
+                  </p>
+                  <div className="rounded-2xl overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="200"
+                      src={`https://www.youtube.com/embed/${getYouTubeId(viewMemory.song_url)}?autoplay=1`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="border-0"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? 'تعديل الذكرى' : 'ذكرى جديدة 💕'}>
         <form onSubmit={handleSave} className="space-y-4">
@@ -371,6 +436,15 @@ export default function MemoriesPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ *</label>
             <input type="date" value={form.date}
               onChange={e => setForm({ ...form, date: e.target.value })} className="input-field" required />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+              <FiMusic size={14} className="text-pink-400" /> أغنية الذكرى (اختياري)
+            </label>
+            <input type="url" placeholder="الصق رابط YouTube هنا..." value={form.song_url}
+              onChange={e => setForm({ ...form, song_url: e.target.value })} className="input-field" />
+            <p className="text-xs text-gray-400 mt-1">مثال: https://youtube.com/watch?v=...</p>
           </div>
 
           {saveError && (
