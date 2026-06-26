@@ -29,12 +29,12 @@ const types = [
 const emptyForm = { title: '', description: '', date: new Date().toISOString().split('T')[0], type: 'anniversary' }
 
 function getDaysUntil(dateStr: string) {
+  // Force local timezone by appending T00:00:00 — avoids UTC-parse shifting date by 1 day
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(dateStr)
-  target.setHours(0, 0, 0, 0)
-  const diff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  return diff
+  const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const target = new Date(y, m - 1, d)
+  return Math.round((target.getTime() - todayLocal.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 export default function OccasionsPage() {

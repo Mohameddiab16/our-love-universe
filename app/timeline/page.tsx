@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Navbar from '@/components/Navbar'
 import AuthGuard from '@/components/AuthGuard'
 import { supabase } from '@/lib/supabase'
+import { useApp } from '@/contexts/AppContext'
 import { FiClock, FiImage, FiMessageCircle, FiCalendar, FiMapPin } from 'react-icons/fi'
 
 interface TimelineItem {
@@ -24,20 +25,34 @@ const typeConfig = {
 }
 
 export default function TimelinePage() {
+  const { activeWorldId } = useApp()
   const [items, setItems] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'memory' | 'message' | 'occasion'>('all')
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => { loadAll() }, [activeWorldId])
 
   const loadAll = async () => {
+    setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    let memoriesQ = supabase.from('memories').select('*')
+    let messagesQ = supabase.from('messages').select('*')
+    let occasionsQ = supabase.from('occasions').select('*')
+
+    if (activeWorldId) {
+      memoriesQ = memoriesQ.eq('world_id', activeWorldId)
+      messagesQ = messagesQ.eq('world_id', activeWorldId)
+      occasionsQ = occasionsQ.eq('world_id', activeWorldId)
+    } else {
+      memoriesQ = memoriesQ.eq('user_id', user.id).is('world_id', null)
+      messagesQ = messagesQ.eq('user_id', user.id).is('world_id', null)
+      occasionsQ = occasionsQ.eq('user_id', user.id).is('world_id', null)
+    }
+
     const [{ data: memories }, { data: messages }, { data: occasions }] = await Promise.all([
-      supabase.from('memories').select('*').eq('user_id', user.id),
-      supabase.from('messages').select('*').eq('user_id', user.id),
-      supabase.from('occasions').select('*').eq('user_id', user.id),
+      memoriesQ, messagesQ, occasionsQ,
     ])
 
     const all: TimelineItem[] = [
@@ -62,12 +77,14 @@ export default function TimelinePage() {
 
   const filtered = filter === 'all' ? items : items.filter(i => i.type === filter)
 
-  // Group by year-month
+  // Group by year-month — parse as local date to avoid UTC timezone shift
   const grouped = filtered.reduce((acc, item) => {
-    const d = new Date(item.date)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const label = d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' })
-    if (!acc[key]) acc[key] = { label, items: [] }
+    const [year, month] = item.date.split('-')
+    const key = `${year}-${month}`
+    if (!acc[key]) {
+      const d = new Date(Number(year), Number(month) - 1, 1)
+      acc[key] = { label: d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' }), items: [] }
+    }
     acc[key].items.push(item)
     return acc
   }, {} as Record<string, { label: string; items: TimelineItem[] }>)
@@ -150,7 +167,7 @@ export default function TimelinePage() {
                                       {config.text}
                                     </span>
                                     <span className="text-xs text-gray-400">
-                                      {new Date(item.date).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })}
+                                      {(() => { const [y,m,d] = item.date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' }) })()}
                                     </span>
                                   </div>
                                   <h3 className="font-semibold text-gray-800 mb-1">{item.title}</h3>

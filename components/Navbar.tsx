@@ -58,20 +58,36 @@ export default function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [userName, setUserName] = useState('')
 
+  const fetchUnread = async (userId: string) => {
+    const { count } = await supabase.from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('is_read', false)
+    setUnreadNotif(count || 0)
+  }
+
   useEffect(() => {
+    let userId = ''
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
+      userId = user.id
       setAvatarUrl(user.user_metadata?.avatar_url || null)
       setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || '')
       supabase.from('profiles').select('is_admin').eq('id', user.id).single().then(({ data }) => {
         setIsAdmin(data?.is_admin || false)
       })
-      supabase.from('notifications').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).eq('is_read', false).then(({ count }) => {
-          setUnreadNotif(count || 0)
-        })
+      fetchUnread(user.id)
+
+      // Real-time subscription to keep count updated
+      const channel = supabase.channel('navbar-notif')
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        }, () => fetchUnread(user.id))
+        .subscribe()
+
+      return () => { supabase.removeChannel(channel) }
     })
-  }, [])
+  }, [pathname])
 
   const handleLogout = async () => {
     await signOut()
